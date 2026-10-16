@@ -1,0 +1,25 @@
+# Dependencias y artefactos
+node_modules/
+dist/
+coverage/
+*.tsbuildinfo
+
+# Entorno (el .env local NUNCA se commitea; sí .env.example)
+.env
+.env.*
+!.env.example
+
+# Base de datos SQLite local
+*.db
+*.db-journal
+*.db-wal
+prisma/*.db*
+
+# SO / editor
+.DS_Store
+.idea/
+.vscode/
+*.log
+
+# Frontend (fase final)
+web/dist/

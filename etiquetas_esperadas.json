@@ -1,0 +1,129 @@
+[
+  {
+    "id": "MSG-01",
+    "categoria": "bug",
+    "prioridad": "alta",
+    "area_sugerida": "backend",
+    "idioma": "es",
+    "resumen": "Vendedor de Guadalajara no puede subir su catálogo: error 500 al cargar Excel; campaña empieza el lunes.",
+    "requiere_info": true,
+    "pregunta_seguimiento": "¿Nos compartes el nombre del vendedor y el archivo que intentó subir?"
+  },
+  {
+    "id": "MSG-02",
+    "categoria": "datos",
+    "prioridad": "media",
+    "area_sugerida": "data",
+    "idioma": "pt",
+    "resumen": "Finanzas necesita planilla de ventas de agosto por estado, con valor total y comisión, para el cierre de mes.",
+    "requiere_info": false,
+    "pregunta_seguimiento": null,
+    "justificacion": "Prioridad discutible: hay plazo (viernes) y obligación de cierre, pero no impacto a clientes ni dinero inmediato. Media."
+  },
+  {
+    "id": "MSG-03",
+    "categoria": "acceso",
+    "prioridad": "media",
+    "area_sugerida": "digital_transformation",
+    "idioma": "es",
+    "resumen": "Nueva colaboradora de Soporte pide acceso al panel de administración.",
+    "requiere_info": true,
+    "pregunta_seguimiento": "¿Cuál es tu correo corporativo y con qué rol necesitas el acceso?"
+  },
+  {
+    "id": "MSG-04",
+    "categoria": "automatizacion",
+    "prioridad": "media",
+    "area_sugerida": "digital_transformation",
+    "idioma": "pt",
+    "resumen": "Operaciones pide automatizar la copia manual diaria de pedidos a planilla y el envío por correo a distribuidores.",
+    "requiere_info": false,
+    "pregunta_seguimiento": null,
+    "justificacion": "Media y no alta: el costo es 2 horas diarias de un área interna y existe la alternativa manual actual."
+  },
+  {
+    "id": "MSG-05",
+    "categoria": "bug",
+    "prioridad": "media",
+    "area_sugerida": "backend",
+    "idioma": "es",
+    "resumen": "Marketing no ve los registros de la última campaña en HubSpot; no sabe si es problema interno o suyo.",
+    "requiere_info": true,
+    "pregunta_seguimiento": "¿De qué campaña se trata y en qué reporte de HubSpot esperabas ver los registros?",
+    "justificacion": "Dudoso en categoria (bug, consulta o datos: el solicitante no afirma que algo se rompió) y en area_sugerida (backend si es la integración; data si es el pipeline)."
+  },
+  {
+    "id": "MSG-06",
+    "categoria": "bug",
+    "prioridad": "alta",
+    "area_sugerida": "frontend",
+    "idioma": "pt",
+    "resumen": "Mecánico reporta que el botón de finalizar compra desaparece en celular al aplicar cupón; en computadora funciona.",
+    "requiere_info": true,
+    "pregunta_seguimiento": "¿En qué celular y navegador ocurre, y con qué cupón?"
+  },
+  {
+    "id": "MSG-07",
+    "categoria": "datos",
+    "prioridad": "baja",
+    "area_sugerida": "data",
+    "idioma": "es",
+    "resumen": "Comercial pide el número de talleres activos en Monterrey para una reunión con un distribuidor.",
+    "requiere_info": false,
+    "pregunta_seguimiento": null,
+    "justificacion": "Dudoso en categoria (datos vs consulta): es un pedido de dato, no una pregunta de conocimiento. Dudoso en prioridad (Baja: sin impacto inmediato ni bloqueo; Media: depende de fecha para reunion con distribuidor)."
+  },
+  {
+    "id": "MSG-08",
+    "categoria": "bug",
+    "prioridad": "alta",
+    "area_sugerida": "backend",
+    "idioma": "pt",
+    "resumen": "Urgente: notas fiscales salen con CNPJ equivocado del vendedor; ya hay reclamos de dos clientes.",
+    "requiere_info": true,
+    "pregunta_seguimiento": "¿Nos compartes los números de las notas afectadas y los vendedores involucrados?"
+  },
+  {
+    "id": "MSG-09",
+    "categoria": "bug",
+    "prioridad": "media",
+    "area_sugerida": "frontend",
+    "idioma": "es",
+    "resumen": "Reporte vago de lentitud general en la plataforma, sin detalle de alcance ni usuarios afectados.",
+    "requiere_info": true,
+    "pregunta_seguimiento": "¿Desde cuándo notas la lentitud, en qué pantallas, y afecta a todos o a algunos usuarios?",
+    "justificacion": "El más dudoso de los 12. Categoria: bug (rendimiento) vs otro. Prioridad: media porque no hay evidencia de alcance; sería alta si confirmara afectación general. Area: frontend vs backend vs devops."
+  },
+  {
+    "id": "MSG-10",
+    "categoria": "automatizacion",
+    "prioridad": "baja",
+    "area_sugerida": "digital_transformation",
+    "idioma": "es",
+    "resumen": "People propone automatizar un mensaje de felicitación por aniversario laboral de cada persona.",
+    "requiere_info": false,
+    "pregunta_seguimiento": null,
+    "justificacion": "Area dudosa entre digital_transformation y producto."
+  },
+  {
+    "id": "MSG-11",
+    "categoria": "consulta",
+    "prioridad": "baja",
+    "area_sugerida": "producto",
+    "idioma": "pt",
+    "resumen": "Comercial pregunta la diferencia entre plan básico y pro para vendedores; un cliente lo consultó.",
+    "requiere_info": false,
+    "pregunta_seguimiento": null
+  },
+  {
+    "id": "MSG-12",
+    "categoria": "bug",
+    "prioridad": "alta",  
+    "area_sugerida": "backend",
+    "idioma": "es",
+    "resumen": "Distribuidor pagó dos veces el mismo pedido y pide reembolso; ya van tres casos este mes.",
+    "requiere_info": true,
+    "pregunta_seguimiento": "¿Nos pasas el número de pedido y el comprobante del pago duplicado del distribuidor?",
+    "justificacion": "Dudoso en categoria: la forma es una consulta ('¿cómo lo proceso?'), pero el fondo es un doble cobro recurrente (tres casos) y eso es lo accionable. Dudoso en area_sugerida, involucra backend para arreglo al producto, producto para reembolso directo a cliente"
+  }
+]

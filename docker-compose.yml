@@ -1,0 +1,19 @@
+# Levanta la app completa. Verificación real diferida a F9 (Docker no instalado aún).
+services:
+  app:
+    build: .
+    ports:
+      - '3000:3000'
+    env_file:
+      - .env
+    volumes:
+      # Persistencia de la base SQLite (se ajusta en F3 cuando exista prisma/).
+      - pulse-data:/app/data
+    healthcheck:
+      test: ['CMD', 'wget', '--spider', '-q', 'http://localhost:3000/health']
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+volumes:
+  pulse-data:
