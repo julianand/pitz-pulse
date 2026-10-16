@@ -2,7 +2,7 @@
 
 > Contexto operativo para agentes de IA que trabajen en este repositorio.
 > **Mantener actualizado en cada fase**: la sección "Estado de fases" es la que más cambia.
-> Última actualización: F0 (completada).
+> Última actualización: F1 (completada).
 
 ## 1. Qué es este proyecto
 
@@ -103,19 +103,22 @@ docker compose up    # levantar todo (verificación diferida, ver PLAN.md F9)
 - Nombres de dominio en español (coherente con el case): `Solicitud`, `Correccion`, `categoria`, etc.
 - **No filtrar PII**: revisar logs, errores y `resumen` generado.
 - Errores manejados explícitamente; sin `catch` silenciosos.
-- Commits **por fase** (historial real es requisito del PDF).
+- Commits **por fase, los hace el autor**; el agente **nunca** commitea.
 - No llamar a la API real en tests; usar modo mock.
 
 ## 7. Flujo de trabajo por fases
 
-**Regla dura**: no iniciar ninguna fase sin confirmación explícita del autor.
+**Reglas duras**:
+- **No iniciar ninguna fase sin confirmación explícita del autor.**
+- **El agente NUNCA hace commits.** Deja los cambios listos y **el autor commitea** (historial real
+  es requisito del PDF).
 
 0. **Antes de iniciar la fase**: presentar el resumen **Esperado · Riesgo · Consideraciones**
    (ver `PLAN.md` §6) y **esperar confirmación**.
 1. Leer la fase en `PLAN.md` (objetivo, archivos, verificación, criterio de aceptación).
 2. Implementar solo esa fase.
 3. **Verificar** con el criterio de aceptación indicado; mostrar la evidencia.
-4. Commit.
+4. **Dejar los cambios listos** (sin commitear) e indicar al autor qué commitear.
 5. Actualizar la sección **"Estado de fases"** de este archivo (marcar hecha + notas).
 6. Esperar feedback antes de la siguiente fase.
 
@@ -124,7 +127,7 @@ docker compose up    # levantar todo (verificación diferida, ver PLAN.md F9)
 | Fase | Estado | Notas |
 |---|---|---|
 | F0 — Andamiaje y esqueleto | ✅ Completa | Express + TS/ESM (`tsx`), Vitest 5, `GET /health` 200 |
-| F1 — Dominio (Zod + masking) | ⬜ No iniciada | |
+| F1 — Dominio (Zod + masking) | ✅ Completa | `clasificacionSchema` + `maskSensitive`; 27 tests |
 | F2 — LLM (prompt + retries + mock) | ⬜ No iniciada | |
 | F3 — Persistencia (Prisma) | ⬜ No iniciada | |
 | F4 — Batch + `resultados.json` | ⬜ No iniciada | |
@@ -139,6 +142,11 @@ Leyenda: ⬜ No iniciada · ⏳ En curso · ✅ Completa · ⛔ Bloqueada
 
 ## 9. Hechos / decisiones vivas (append)
 
+- **F1**: `src/domain/schemas.ts` (`clasificacionSchema`, enums, `resumen` **≤20 palabras → rechaza**,
+  `requiere_info=true` exige `pregunta_seguimiento`, `false` exige `null`). `src/domain/masking.ts`
+  con placeholders **`[EMAIL]` `[TELEFONO]` `[CPF]` `[CNPJ]` `[RFC]`** (teléfonos exigen +55/+52,
+  paréntesis o guion para no confundirse con CPF/CNPJ). `maskSensitiveWithReport` devuelve conteos
+  sin exponer valores. 27 tests verdes.
 - **F0**: backend **Express + TypeScript (ESM, `module: NodeNext`)**; dev con **`tsx`**, build con
   `tsc` → `dist/`; tests con **Vitest 5** + supertest. Imports relativos **con extensión `.js`**.
   `npm install` sin vulnerabilidades (`npm audit` = 0).

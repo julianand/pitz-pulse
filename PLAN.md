@@ -142,7 +142,8 @@ MOCK=0
 
 ## 5. Fases
 
-Cada fase termina con: **resultado verificable + commit propio** (historial real, requisito del PDF).
+Cada fase termina con: **resultado verificable** y un **commit del autor** (el agente no commitea;
+el historial real de commits es requisito del PDF).
 
 ### F0 — Andamiaje y esqueleto ejecutable
 - **Objetivo**: proyecto TS corriendo con healthcheck; tooling y Docker *escritos* (sin verificar).
@@ -339,7 +340,7 @@ Cada fase termina con: **resultado verificable + commit propio** (historial real
   `make test`/`make eval` verdes, commits por fase.
 - **Riesgo**: historial de commits no "real" si se acumuló al final; README con números
   desactualizados; `.env` colado al repo.
-- **Consideraciones**: commits **por fase** (ya en el flujo); README debe reflejar la **última
+- **Consideraciones**: commits **por fase, los hace el autor**; README debe reflejar la **última
   corrida**; verificar `.gitignore`.
 
 ### F9 — Docker: verificación diferida
