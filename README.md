@@ -35,14 +35,28 @@ curl http://localhost:3000/health
 ## Comandos
 
 ```bash
-npm run dev        # servidor en desarrollo
-npm run build      # compilar a dist/
-npm run lint       # lint
-npm test           # tests
-make results       # genera data/resultados.json (MOCK=1 para offline)
-make eval          # evalúa resultados.json vs etiquetas_esperadas.json
-docker compose up  # levantar todo (ver F9)
+npm run dev               # servidor en desarrollo
+npm run build             # compilar a dist/
+npm run lint              # lint
+npm test                  # tests
+npm run llm:ping -- MSG-01  # probar rápido una configuración LLM (usa el .env)
+make llm-ping ARGS="MSG-01" # equivalente vía make
+make results              # genera data/resultados.json (MOCK=1 para offline)
+make eval                 # evalúa resultados.json vs etiquetas_esperadas.json
+docker compose up         # levantar todo (ver F9)
 ```
+
+### Probar la configuración del LLM (`llm:ping`)
+
+`npm run llm:ping -- <MSG-xx | "mensaje libre">` clasifica un mensaje usando la configuración
+del `.env` actual y muestra: el texto enmascarado que se envió al modelo, las detecciones de datos
+sensibles, la clasificación validada y métricas (tokens, latencia, **costo estimado** y reintentos de
+reparación). Sirve para verificar rápido el proveedor, el modelo y los precios **sin** levantar el
+servidor.
+
+- Modo **mock** (sin API): `MOCK=1 npm run llm:ping -- MSG-01`.
+- El **costo** usa `PRICE_INPUT_PER_1M` y `PRICE_OUTPUT_PER_1M` del `.env`; si están en `0`, el
+  costo sale `$0` (cargá los precios reales del modelo para verlo).
 
 ## Documentación
 

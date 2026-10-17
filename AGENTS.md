@@ -2,7 +2,7 @@
 
 > Contexto operativo para agentes de IA que trabajen en este repositorio.
 > **Mantener actualizado en cada fase**: la sección "Estado de fases" es la que más cambia.
-> Última actualización: F1 (completada).
+> Última actualización: F2 (completada).
 
 ## 1. Qué es este proyecto
 
@@ -128,7 +128,7 @@ docker compose up    # levantar todo (verificación diferida, ver PLAN.md F9)
 |---|---|---|
 | F0 — Andamiaje y esqueleto | ✅ Completa | Express + TS/ESM (`tsx`), Vitest 5, `GET /health` 200 |
 | F1 — Dominio (Zod + masking) | ✅ Completa | `clasificacionSchema` + `maskSensitive`; 27 tests |
-| F2 — LLM (prompt + retries + mock) | ⬜ No iniciada | |
+| F2 — LLM (prompt + retries + mock) | ✅ Completa | `classifySolicitud` + retry/backoff + repair + mock; header `x-opencode-session` = id solicitud; probado con proveedor real |
 | F3 — Persistencia (Prisma) | ⬜ No iniciada | |
 | F4 — Batch + `resultados.json` | ⬜ No iniciada | |
 | F5 — API HTTP | ⬜ No iniciada | |
@@ -142,6 +142,16 @@ Leyenda: ⬜ No iniciada · ⏳ En curso · ✅ Completa · ⛔ Bloqueada
 
 ## 9. Hechos / decisiones vivas (append)
 
+- **F2.1 (refinamientos)**: header **`x-opencode-session` por request** con el **`id` de la solicitud**
+  (fallback a `LLM_SESSION_ID`); script **`npm run llm:ping -- MSG-01`** (y `make llm-ping`) documentado
+  en README; **costo estimado** en métricas vía `src/config/prices.ts` + `PRICE_*_PER_1M`. **Validado
+  contra el proveedor real** (deepseek-v4.1-flash): clasificación válida, `reparaciones=0`.
+- **F2**: `prompts/classify.v1.ts` (prompt versionado, `buildMessages`). `src/llm/`: `client.ts`
+  (OpenAI SDK, `json_object`, `maxRetries:0`, header **`x-opencode-session`**, `reasoning_effort`
+  opcional), `retry.ts` (**backoff** exponencial+jitter, reintenta red/429/5xx), `repair.ts` (parseo
+  tolerante + reenvío de `error.issues`), `mock.ts`, `types.ts`. `src/agents/classifier/index.ts`
+  orquesta: **enmascarar → prompt → llamar → validar → reparar 1 vez → inyectar `id`/`version_prompt`**.
+  `scripts/ping-llm.ts` (verificación). 43 tests verdes. **Pendiente**: prueba contra el proveedor real.
 - **F1**: `src/domain/schemas.ts` (`clasificacionSchema`, enums, `resumen` **≤20 palabras → rechaza**,
   `requiere_info=true` exige `pregunta_seguimiento`, `false` exige `null`). `src/domain/masking.ts`
   con placeholders **`[EMAIL]` `[TELEFONO]` `[CPF]` `[CNPJ]` `[RFC]`** (teléfonos exigen +55/+52,

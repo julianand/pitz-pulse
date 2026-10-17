@@ -30,6 +30,8 @@ const EnvSchema = z.object({
   LLM_TIMEOUT_MS: z.coerce.number().int().positive().default(30_000),
   LLM_MAX_RETRIES: z.coerce.number().int().min(0).default(3),
   LLM_REASONING_EFFORT: z.string().default('off'),
+  /** Identificador de sesión para el proveedor (opencode-go: header `x-opencode-session`). */
+  LLM_SESSION_ID: z.string().default('pitz-pulse'),
 
   PROMPT_VERSION: z.string().default('v1'),
   CONFIDENCE_THRESHOLD: z.coerce.number().min(0).max(1).default(0.75),

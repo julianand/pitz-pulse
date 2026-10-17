@@ -1,4 +1,4 @@
-.PHONY: install dev build start test test-watch lint format typecheck results eval docker-up docker-down
+.PHONY: install dev build start test test-watch lint format typecheck llm-ping results eval docker-up docker-down
 
 install:
 	npm install
@@ -26,6 +26,10 @@ lint:
 
 format:
 	npm run format
+
+# Prueba rápida de una configuración LLM (usa el .env actual). Ej: make llm-ping ARGS="MSG-01"
+llm-ping:
+	npx tsx scripts/ping-llm.ts $(ARGS)
 
 # Genera data/resultados.json a partir de data/mensajes.json (F4). MOCK=1 para offline.
 results:
