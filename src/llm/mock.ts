@@ -1,4 +1,4 @@
-import type { AreaSugerida, Categoria, Idioma, Prioridad } from '../domain/schemas.js';
+import type { AreaSugerida, Categoria, Idioma, Prioridad } from '../utils/schemas.js';
 import type { LlmProvider, LlmRequest, LlmResponse } from './types.js';
 
 /**

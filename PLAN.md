@@ -75,16 +75,16 @@ pitz-pulse/
 │  ├─ config/{env.ts,prices.ts}
 │  ├─ llm/{client.ts,retry.ts,repair.ts,mock.ts,types.ts}
 │  ├─ agents/classifier/{index.ts,run-batch.ts,pool.ts}
-│  ├─ domain/{schemas.ts,masking.ts,solicitud.repo.ts,correccion.repo.ts,model-call-log.repo.ts}
+│  ├─ utils/{schemas.ts,masking.ts}
+│  ├─ db/{client.ts,solicitud.repo.ts,correccion.repo.ts,model-call-log.repo.ts}
 │  ├─ eval/metrics.ts
 │  ├─ middleware/{auth.ts,logger.ts,error.ts}
 │  ├─ routes/{health.ts,solicitudes.ts,index.ts}
 │  ├─ services/solicitud.service.ts
-│  ├─ db/client.ts
 │  ├─ app.ts
 │  └─ index.ts
 ├─ web/                             # React (Vite) — F7
-├─ tests/{domain,api,db,eval,llm}/
+├─ tests/{utils,api,db,eval,llm}/
 ├─ Dockerfile
 ├─ docker-compose.yml
 ├─ Makefile
@@ -158,9 +158,9 @@ el historial real de commits es requisito del PDF).
 
 ### F1 — Dominio: esquema Zod + enmascaramiento (sin LLM)
 - **Objetivo**: contrato de clasificación y anonimización, con tests.
-- **Archivos**: `src/domain/schemas.ts` (enums `categoria/prioridad/area_sugerida/idioma`, regla
-  `resumen` ≤ 20 palabras, `confianza` 0–1), `src/domain/masking.ts`, `tests/domain/schema.test.ts`,
-  `tests/domain/masking.test.ts`.
+- **Archivos**: `src/utils/schemas.ts` (enums `categoria/prioridad/area_sugerida/idioma`, regla
+  `resumen` ≤ 20 palabras, `confianza` 0–1), `src/utils/masking.ts`, `tests/utils/schema.test.ts`,
+  `tests/utils/masking.test.ts`.
 - **Verificación**: `npm test` — schema acepta válido / rechaza inválido; masking cubre CPF, CNPJ,
   RFC, email, teléfono (+52/+55) y casos borde (nulos, números similares).
 - **Aceptación**: tests de dominio verdes y cero PII en salida mascarada.
@@ -180,7 +180,7 @@ el historial real de commits es requisito del PDF).
 - **Objetivo**: BD y repos con migraciones versionadas.
 - **Deps**: prisma, @prisma/client.
 - **Archivos**: `prisma/schema.prisma`, `prisma/migrations/**`, `src/db/client.ts`,
-  `src/domain/{solicitud,correccion,model-call-log}.repo.ts`, `tests/db/*.test.ts`.
+  `src/db/{solicitud,correccion,model-call-log}.repo.ts`, `tests/db/*.test.ts`.
 - **Verificación**: `npx prisma migrate dev` genera migración; test de repo inserta/lee y valida FK;
   `clasificacion_original` y `Correccion` append-only funcionan.
 - **Aceptación**: migración aplicable desde cero + tests de repositorio verdes.
@@ -295,11 +295,12 @@ el historial real de commits es requisito del PDF).
 ### F3 — Persistencia (Prisma + SQLite)
 - **Esperado**: `schema.prisma` (`Solicitud`, `Correccion`, `ModelCallLog`), migración aplicable
   desde cero, repos con tests.
-- **Riesgo**: **SQLite no soporta `enum` en Prisma**; soporte dudoso de `Json` según versión;
-  FKs e índices; migraciones reproducibles.
-- **Consideraciones**: usar **`String` + validación Zod** para enums; para `clasificacion_original`,
-  proponer `Json` y, si el conector no lo soporta, **TEXT serializado**; índices en campos de filtro
-  (`categoria`, `prioridad`, `area_sugerida`); `DateTime` en **UTC**.
+- **Riesgo**: fricción de versiones de Prisma (la 7/8 exige *driver adapters* e imports `.ts`);
+  FKs e índices; reproducibilidad de migraciones.
+- **Consideraciones** (resueltas): Prisma ≥ 6.2 **sí soporta `enum` y `Json` en SQLite**; se fija
+  **Prisma 6.19.3** (compatible con build `tsc`). Enums Prisma + Zod (con test de no-drift);
+  `clasificacion_original` como `Json`. Índices en campos de filtro; `PRAGMA journal_mode=WAL` y
+  `foreign_keys=ON`; `DateTime` en UTC.
 
 ### F4 — Batch + `resultados.json`
 - **Esperado**: `make results MOCK=1` genera `resultados.json` con 12 entradas ordenadas y válidas

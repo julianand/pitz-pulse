@@ -2,7 +2,7 @@
 
 > Contexto operativo para agentes de IA que trabajen en este repositorio.
 > **Mantener actualizado en cada fase**: la sección "Estado de fases" es la que más cambia.
-> Última actualización: F2 (completada).
+> Última actualización: F3 (completada).
 
 ## 1. Qué es este proyecto
 
@@ -69,14 +69,14 @@ src/
   config/        env.ts · prices.ts
   llm/           client.ts · retry.ts · repair.ts · mock.ts · types.ts
   agents/classifier/  index.ts · run-batch.ts · pool.ts
-  domain/        schemas.ts · masking.ts · *.repo.ts
+  utils/         schemas.ts · masking.ts
+  db/            client.ts · solicitud.repo.ts · correccion.repo.ts · model-call-log.repo.ts
   eval/          metrics.ts
   middleware/    auth.ts · logger.ts · error.ts
   routes/        health.ts · solicitudes.ts · index.ts
   services/      solicitud.service.ts
-  db/            client.ts
   app.ts · index.ts
-tests/           domain/ · api/ · db/ · eval/ · llm/
+tests/           utils/ · api/ · db/ · eval/ · llm/
 web/             React (Vite) — fase final
 Dockerfile · docker-compose.yml · Makefile · .env.example · README.md
 DECISIONES.md · AI_LOG.md   ← los escribe el autor, NO el agente
@@ -99,7 +99,7 @@ docker compose up    # levantar todo (verificación diferida, ver PLAN.md F9)
 
 - **TypeScript estricto**; sin `any` innecesario.
 - Separar responsabilidades: `llm/` (transporte al proveedor) vs `agents/` (orquestación del
-  clasificador) vs `domain/` (reglas y datos).
+  clasificador) vs `utils/` (contrato Zod + masking) vs `db/` (repositorios/operaciones de BD).
 - Nombres de dominio en español (coherente con el case): `Solicitud`, `Correccion`, `categoria`, etc.
 - **No filtrar PII**: revisar logs, errores y `resumen` generado.
 - Errores manejados explícitamente; sin `catch` silenciosos.
@@ -129,7 +129,7 @@ docker compose up    # levantar todo (verificación diferida, ver PLAN.md F9)
 | F0 — Andamiaje y esqueleto | ✅ Completa | Express + TS/ESM (`tsx`), Vitest 5, `GET /health` 200 |
 | F1 — Dominio (Zod + masking) | ✅ Completa | `clasificacionSchema` + `maskSensitive`; 27 tests |
 | F2 — LLM (prompt + retries + mock) | ✅ Completa | `classifySolicitud` + retry/backoff + repair + mock; header `x-opencode-session` = id solicitud; probado con proveedor real |
-| F3 — Persistencia (Prisma) | ⬜ No iniciada | |
+| F3 — Persistencia (Prisma) | ✅ Completa | Prisma 6.19.3 + SQLite; enums+Json; WAL; repos con Zod pre-write; 68 tests |
 | F4 — Batch + `resultados.json` | ⬜ No iniciada | |
 | F5 — API HTTP | ⬜ No iniciada | |
 | F6 — Evaluación + calibración | ⬜ No iniciada | |
@@ -142,6 +142,17 @@ Leyenda: ⬜ No iniciada · ⏳ En curso · ✅ Completa · ⛔ Bloqueada
 
 ## 9. Hechos / decisiones vivas (append)
 
+- **F3**: **Prisma 6.19.3 + SQLite** (fijado, ver nota abajo). Tablas `solicitudes`/`correcciones`/
+  `model_call_logs`, props **snake_case**, **enums Prisma** + `clasificacion_original` **Json**.
+  Índices: `solicitudes`(categoria, prioridad, area_sugerida, requiere_revision, created_at),
+  `correcciones`([solicitud_id, patch_id]), `model_call_logs`(solicitud_id, created_at, estado).
+  `src/db/client.ts` con `PRAGMA journal_mode=WAL` + `foreign_keys=ON`. Repos en `src/db/*.repo.ts`
+  con **Zod parse antes del write**; test de **no-drift** enums Prisma↔Zod. `vitest.config.ts` +
+  `tests/setup/db.ts` (BD de test `prisma/test.db`, `fileParallelism:false`). 68 tests verdes.
+  **Sin `hash_contenido`** (va a F10).
+- **Decisión Prisma**: se usa **6.19.3**, no la 7/8, porque Prisma 7+ (cliente Rust-free) exige
+  *driver adapters* e imports con extensión `.ts`, incompatibles con nuestro build `tsc` (emit).
+  Prisma ≥6.2 soporta `enum` y `Json` en SQLite.
 - **F2.1 (refinamientos)**: header **`x-opencode-session` por request** con el **`id` de la solicitud**
   (fallback a `LLM_SESSION_ID`); script **`npm run llm:ping -- MSG-01`** (y `make llm-ping`) documentado
   en README; **costo estimado** en métricas vía `src/config/prices.ts` + `PRICE_*_PER_1M`. **Validado
@@ -152,8 +163,8 @@ Leyenda: ⬜ No iniciada · ⏳ En curso · ✅ Completa · ⛔ Bloqueada
   tolerante + reenvío de `error.issues`), `mock.ts`, `types.ts`. `src/agents/classifier/index.ts`
   orquesta: **enmascarar → prompt → llamar → validar → reparar 1 vez → inyectar `id`/`version_prompt`**.
   `scripts/ping-llm.ts` (verificación). 43 tests verdes. **Pendiente**: prueba contra el proveedor real.
-- **F1**: `src/domain/schemas.ts` (`clasificacionSchema`, enums, `resumen` **≤20 palabras → rechaza**,
-  `requiere_info=true` exige `pregunta_seguimiento`, `false` exige `null`). `src/domain/masking.ts`
+- **F1**: `src/utils/schemas.ts` (`clasificacionSchema`, enums, `resumen` **≤20 palabras → rechaza**,
+  `requiere_info=true` exige `pregunta_seguimiento`, `false` exige `null`). `src/utils/masking.ts`
   con placeholders **`[EMAIL]` `[TELEFONO]` `[CPF]` `[CNPJ]` `[RFC]`** (teléfonos exigen +55/+52,
   paréntesis o guion para no confundirse con CPF/CNPJ). `maskSensitiveWithReport` devuelve conteos
   sin exponer valores. 27 tests verdes.

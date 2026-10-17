@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { maskSensitive, maskSensitiveWithReport } from '../../src/domain/masking.js';
+import { maskSensitive, maskSensitiveWithReport } from '../../src/utils/masking.js';
 
 describe('maskSensitive', () => {
   it('enmascara correos electrónicos', () => {

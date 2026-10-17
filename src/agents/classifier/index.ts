@@ -1,5 +1,5 @@
-import { maskSensitiveWithReport, type MaskDetection } from '../../domain/masking.js';
-import { clasificacionSchema, type Clasificacion } from '../../domain/schemas.js';
+import { maskSensitiveWithReport, type MaskDetection } from '../../utils/masking.js';
+import { clasificacionSchema, type Clasificacion } from '../../utils/schemas.js';
 import {
   buildRepairMessages,
   parseJsonObject,

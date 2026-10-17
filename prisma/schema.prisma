@@ -1,0 +1,119 @@
+// Pitz Pulse — esquema de base de datos (SQLite).
+// Convención: props en snake_case para que coincidan con el JSON de dominio.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum Categoria {
+  bug
+  datos
+  acceso
+  automatizacion
+  consulta
+  otro
+}
+
+enum Prioridad {
+  alta
+  media
+  baja
+}
+
+enum AreaSugerida {
+  backend
+  frontend
+  data
+  devops
+  producto
+  digital_transformation
+}
+
+enum Idioma {
+  es
+  pt
+}
+
+enum ModelCallEstado {
+  exito
+  error
+}
+
+model Solicitud {
+  id String @id
+
+  contenido_raw        String
+  contenido_mascarado  String
+  clasificacion_original Json
+
+  categoria            Categoria
+  prioridad            Prioridad
+  area_sugerida        AreaSugerida
+  idioma               Idioma
+  resumen              String
+  requiere_info        Boolean
+  pregunta_seguimiento String?
+  confianza            Float
+  version_prompt       String
+  requiere_revision    Boolean @default(false)
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  correcciones    Correccion[]
+  model_call_logs ModelCallLog[]
+
+  @@index([categoria])
+  @@index([prioridad])
+  @@index([area_sugerida])
+  @@index([requiere_revision])
+  @@index([created_at])
+  @@map("solicitudes")
+}
+
+model Correccion {
+  id Int @id @default(autoincrement())
+
+  solicitud_id   String
+  campo          String
+  valor_anterior String?
+  valor_nuevo    String?
+  patch_id       String
+  autor          String
+  created_at     DateTime @default(now())
+
+  solicitud Solicitud @relation(fields: [solicitud_id], references: [id], onDelete: Cascade)
+
+  @@index([solicitud_id, patch_id])
+  @@map("correcciones")
+}
+
+model ModelCallLog {
+  id Int @id @default(autoincrement())
+
+  solicitud_id      String?
+  modelo            String
+  version_prompt    String
+  prompt_tokens     Int
+  completion_tokens Int
+  total_tokens      Int
+  costo_estimado    Float
+  latencia_ms       Int
+  intento           Int
+  reparaciones      Int
+  estado            ModelCallEstado
+  error             String?
+  created_at        DateTime @default(now())
+
+  solicitud Solicitud? @relation(fields: [solicitud_id], references: [id], onDelete: SetNull)
+
+  @@index([solicitud_id])
+  @@index([created_at])
+  @@index([estado])
+  @@map("model_call_logs")
+}

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { clasificacionSchema, countWords, RESUMEN_MAX_PALABRAS } from '../../src/domain/schemas.js';
+import { clasificacionSchema, countWords, RESUMEN_MAX_PALABRAS } from '../../src/utils/schemas.js';
 
 function clasificacionValida(overrides: Record<string, unknown> = {}): Record<string, unknown> {
   return {
