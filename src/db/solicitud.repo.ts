@@ -33,7 +33,7 @@ export const solicitudCreateSchema = z
 
 export type SolicitudCreateInput = z.infer<typeof solicitudCreateSchema>;
 
-/** Campos editables mediante PATCH (la clasificación vigente). */
+/** Campos editables mediante PATCH (la clasificación vigente + estado de revisión). */
 export const solicitudPatchSchema = z
   .object({
     categoria: z.enum(CATEGORIAS),
@@ -44,6 +44,7 @@ export const solicitudPatchSchema = z
     requiere_info: z.boolean(),
     pregunta_seguimiento: z.string().nullable(),
     confianza: z.number().min(0).max(1),
+    requiere_revision: z.boolean(),
   })
   .partial();
 

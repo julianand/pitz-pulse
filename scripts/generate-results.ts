@@ -1,7 +1,7 @@
 import { readFileSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { buildMessages, VERSION } from '../prompts/classify.v1.js';
+import { buildMessages, VERSION } from '../src/prompts/classify.v1.js';
 import { runBatch, type BatchItem, type BatchOk } from '../src/agents/classifier/run-batch.js';
 import { env, isMockMode } from '../src/config/env.js';
 import { formatCost } from '../src/config/prices.js';

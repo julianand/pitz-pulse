@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildMessages } from '../../prompts/classify.v1.js';
+import { buildMessages } from '../../src/prompts/classify.v1.js';
 import {
   ClasificacionInvalidaError,
   classifySolicitud,

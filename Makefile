@@ -1,7 +1,7 @@
 # Atajos finos sobre los scripts de npm (la fuente de la verdad es package.json).
 # Ej: `make test` ≡ `npm test`, `make llm-ping ARGS="MSG-01"` ≡ `npm run llm:ping -- MSG-01`.
 
-.PHONY: install dev build start test test-watch typecheck lint format llm-ping results eval docker-up docker-down
+.PHONY: install dev build start test test-watch typecheck lint format llm-ping smoke results eval docker-up docker-down
 
 install:
 	npm install
@@ -33,6 +33,10 @@ format:
 # Prueba rápida de una configuración LLM (usa el .env actual).
 llm-ping:
 	npm run llm:ping -- $(ARGS)
+
+# Smoke test de la API contra un server levantado (ARGS="--base-url http://localhost:3000").
+smoke:
+	npm run smoke -- $(ARGS)
 
 # Genera data/resultados.json a partir de data/mensajes.json (MOCK=1 para offline).
 results:

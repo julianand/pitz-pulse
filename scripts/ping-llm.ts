@@ -5,7 +5,7 @@ import { classifySolicitud } from '../src/agents/classifier/index.js';
 import { env, isMockMode } from '../src/config/env.js';
 import { estimateCost, formatCost } from '../src/config/prices.js';
 import { crearProvider } from '../src/llm/factory.js';
-import { buildMessages, VERSION } from '../prompts/classify.v1.js';
+import { buildMessages, VERSION } from '../src/prompts/classify.v1.js';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const MENSAJES_PATH = resolve(HERE, '../data/mensajes.json');

@@ -61,17 +61,16 @@ pitz-pulse/
 │  ├─ mensajes.json                 # Anexo A (creado por el agente)
 │  ├─ etiquetas_esperadas.json      # ya existe (autor)
 │  └─ resultados.json               # salida del batch
-├─ prompts/
-│  ├─ classify.v1.ts
-│  └─ classify.v2.ts                # iteración (F6)
 ├─ prisma/
 │  ├─ schema.prisma
 │  └─ migrations/
 ├─ scripts/
 │  ├─ ping-llm.ts
+│  ├─ smoke-api.ts
 │  ├─ generate-results.ts
 │  └─ eval.ts
 ├─ src/
+│  ├─ prompts/{classify.v1.ts,classify.v2.ts}   # versionado por archivo (bajo src por rootDir)
 │  ├─ config/{env.ts,prices.ts}
 │  ├─ llm/{client.ts,factory.ts,retry.ts,repair.ts,mock.ts,types.ts}
 │  ├─ agents/classifier/{index.ts,run-batch.ts,pool.ts}
@@ -168,7 +167,7 @@ el historial real de commits es requisito del PDF).
 ### F2 — LLM: prompt versionado + cliente con timeout/backoff/reintentos + mock
 - **Objetivo**: llamada robusta y determinista al modelo.
 - **Deps**: openai (SDK).
-- **Archivos**: `prompts/classify.v1.ts`, `src/llm/{client.ts,retry.ts,repair.ts,mock.ts,types.ts}`,
+- **Archivos**: `src/prompts/classify.v1.ts`, `src/llm/{client.ts,retry.ts,repair.ts,mock.ts,types.ts}`,
   `src/agents/classifier/index.ts`, `scripts/ping-llm.ts`, `src/config/env.ts` (extender).
 - **Detalle**: `temperature=0`; `response_format json_object`; validación Zod + reparación/1
   reintento; timeout + backoff exponencial con jitter; `version_prompt` inyectado.
@@ -198,26 +197,28 @@ el historial real de commits es requisito del PDF).
 ### F5 — Servicio HTTP (Express)
 - **Objetivo**: API completa de la Parte 2.
 - **Archivos**: `src/app.ts`, `src/middleware/{auth.ts,logger.ts,error.ts}`,
-  `src/routes/solicitudes.ts`, `src/services/solicitud.service.ts`, `tests/api/*.test.ts`.
+  `src/routes/solicitudes.ts`, `src/services/solicitud.service.ts`, `tests/api/*.test.ts`,
+  `scripts/smoke-api.ts`.
 - **Detalle**:
-  - `POST /solicitudes`: valida body (Zod), **claim** idempotente en transacción, enmascara, clasifica
-    (o reutiliza), persiste. Colisión de contenido → **409**. Repetido idéntico → no llama al modelo.
-  - `GET /solicitudes`: filtros `categoria`, `prioridad`, `area` + paginación; respuesta
-    `{ data, total, page, limit }`. Filtro opcional `requiere_revision`.
-  - `GET /solicitudes/{id}`: 200/404.
-  - `PATCH /solicitudes/{id}`: valida campos, actualiza vigentes, inserta filas en `Correccion`
-    (`patch_id` generado), `autor` del body.
-  - Auth API key en **todas** las rutas. **Logs estructurados** por llamada (latencia, tokens,
-    costo). `contenido_raw` nunca sale en respuestas.
+  - `POST /solicitudes`: valida body (Zod), pre-check de idempotencia, enmascara, clasifica
+    (o reutiliza), persiste. Colisión de contenido → **409**. Repetido idéntico → no llama al modelo (200).
+  - `GET /solicitudes`: filtros `categoria`, `prioridad`, `area`, `idioma`, `requiere_revision` +
+    paginación (`page`=1, `limit`=20/máx 100); respuesta `{ items, itemCount, currentPage, totalPages, limit }`.
+  - `GET /solicitudes/{id}`: 200/404 (incluye historial `correcciones`).
+  - `PATCH /solicitudes/{id}`: valida campos (incluido `requiere_revision` explícito), actualiza
+    vigentes, inserta filas en `Correccion` (`patch_id` generado), `autor` del body. Sin cambios → 400.
+  - Auth API key (`x-api-key`) en `/solicitudes`. **Logs estructurados** (pino) por llamada (latencia,
+    tokens, costo). `contenido_raw` nunca sale en respuestas.
 - **Verificación**: tests con supertest + provider mockeado/spy: 401 sin key; POST crea; POST
   repetido no llama al modelo ni duplica; 409 en colisión; filtros+paginación; GET{id} 404/200;
-  PATCH crea `Correccion` y actualiza vigente.
+  PATCH crea `Correccion` y actualiza vigente. **`npm run smoke`** (cliente `fetch`) reproduce los
+  escenarios contra un server levantado.
 - **Aceptación**: suite de API verde sin tocar la API real.
 
 ### F6 — Evaluación (`make eval`) + calibración de `confianza`
 - **Objetivo**: métrica por campo, fallos, e iteración de prompt.
 - **Archivos**: `scripts/eval.ts`, `src/eval/metrics.ts`, `tests/eval/metrics.test.ts`,
-  `Makefile: eval`, `prompts/classify.v2.ts` (iteración), `data/resultados.json` (v2).
+  `Makefile: eval`, `src/prompts/classify.v2.ts` (iteración), `data/resultados.json` (v2).
 - **Detalle**: accuracy por campo (8 comunes), lista de `id` con fallo y campo fallado; barrido
   umbral-confianza vs accuracy para justificar el corte; comparativa v1 vs v2.
 - **Verificación**: `make eval` imprime accuracy por campo + fallos + tabla de umbral; comparativa v1
@@ -388,6 +389,6 @@ el historial real de commits es requisito del PDF).
 
 - Ajustes finos del plan se harán con los primeros resultados del agente (acordado con el autor).
 - Umbral de confianza final tras F6.
-- Shape definitivo de paginación si se necesita otro (por defecto `{data,total,page,limit}`).
+- Shape de paginación: **definido** en F5 → `{ items, itemCount, currentPage, totalPages, limit }`.
 - Si opencode-go soporta `reasoning_effort` / structured outputs estrictos.
 - Estado de Docker al llegar F9.

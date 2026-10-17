@@ -2,7 +2,7 @@
 
 > Contexto operativo para agentes de IA que trabajen en este repositorio.
 > **Mantener actualizado en cada fase**: la sección "Estado de fases" es la que más cambia.
-> Última actualización: F4 (completada).
+> Última actualización: F5 (completada).
 
 ## 1. Qué es este proyecto
 
@@ -45,8 +45,8 @@ Fuentes de requisitos, en orden de precedencia:
 - **Enmascaramiento (obligatorio)**: CPF/CNPJ (BR), RFC (MX), emails y teléfonos (+52/+55).
   Aplica al **input del modelo, a los logs y a los errores**.
 - **`contenido_raw`**: solo en BD; **nunca** en logs ni en respuestas de la API.
-- **Prompt versionado**: un archivo por versión en `prompts/`; activa por env; `resultados.json`
-  registra la usada.
+- **Prompt versionado**: un archivo por versión en `src/prompts/`; activa por env; `resultados.json`
+  registra la usada. (Vive dentro de `src/` para respetar el `rootDir` del build.)
 - **Eval offline**: compara `resultados.json` vs `etiquetas_esperadas.json` **sin llamar al modelo**.
 - **Costos**: `usage` real por llamada; precios por modelo vía env (no hardcodeados).
 - **Mock**: `MOCK=1` documentado; usado por tests.
@@ -62,14 +62,14 @@ confianza (0–1), version_prompt`.
 
 ```
 data/            mensajes.json · etiquetas_esperadas.json · resultados.json
-prompts/         classify.v1.ts · classify.v2.ts …
 prisma/          schema.prisma · migrations/
-scripts/         ping-llm.ts · generate-results.ts · eval.ts
+scripts/         ping-llm.ts · smoke-api.ts · generate-results.ts · eval.ts
 src/
+  prompts/       classify.v1.ts · classify.v2.ts …   (prompt versionado)
   config/        env.ts · prices.ts
   llm/           client.ts · factory.ts · retry.ts · repair.ts · mock.ts · types.ts
   agents/classifier/  index.ts · run-batch.ts · pool.ts
-  utils/         schemas.ts · masking.ts
+  utils/         schemas.ts · masking.ts · errors.ts
   db/            client.ts · solicitud.repo.ts · correccion.repo.ts · model-call-log.repo.ts
   eval/          metrics.ts
   middleware/    auth.ts · logger.ts · error.ts
@@ -93,14 +93,15 @@ npm run build                # prisma generate + tsc
 npm test                     # tests (Vitest, sin API real)
 npm run lint                 # lint
 npm run llm:ping -- MSG-01   # probar una config LLM (--id MSG-xx o texto libre)
+npm run smoke                # smoke test de la API contra un server levantado
 npm run results              # genera data/resultados.json (MOCK=1 para offline)
 npm run eval                 # evalúa resultados.json vs etiquetas_esperadas.json
 npm run db:migrate           # migraciones Prisma (db:generate/db:deploy/db:reset)
 docker compose up            # levantar todo (verificación diferida, ver PLAN.md F9)
 ```
 
-Equivalentes cortos vía `make` (mismos scripts): `make test`, `make results`, `make eval`,
-`make llm-ping ARGS="MSG-01"`, `make dev`, `make build`.
+Equivalentes cortos vía `make` (mismos scripts): `make test`, `make smoke`, `make results`,
+`make eval`, `make llm-ping ARGS="MSG-01"`, `make dev`, `make build`.
 
 ## 6. Convenciones
 
@@ -140,7 +141,7 @@ Equivalentes cortos vía `make` (mismos scripts): `make test`, `make results`, `
 | F2 — LLM (prompt + retries + mock) | ✅ Completa | `classifySolicitud` + retry/backoff + repair + mock; header `x-opencode-session` = id solicitud; probado con proveedor real |
 | F3 — Persistencia (Prisma) | ✅ Completa | Prisma 6.19.3 + SQLite; enums+Json; WAL; repos con Zod pre-write; 68 tests |
 | F4 — Batch + `resultados.json` | ✅ Completa | `run-batch`+`pool` (pLimit/allSettled), `mensajes.json`, `resultados.json` real (12/12), persistencia idempotente |
-| F5 — API HTTP | ⬜ No iniciada | |
+| F5 — API HTTP | ✅ Completa | `POST/GET/GET{id}/PATCH /solicitudes` con auth `x-api-key`, idempotencia (200/409), filtros+paginación, `Correccion` en PATCH, logs pino; 87 tests |
 | F6 — Evaluación + calibración | ⬜ No iniciada | |
 | F7 — Frontend React (mínimo) | ⬜ No iniciada | |
 | F8 — Docs y empaquetado | ⬜ No iniciada | |
@@ -151,6 +152,19 @@ Leyenda: ⬜ No iniciada · ⏳ En curso · ✅ Completa · ⛔ Bloqueada
 
 ## 9. Hechos / decisiones vivas (append)
 
+- **F5**: API HTTP completa. `src/app.ts` (`createApp(deps)` con provider/`versionPrompt`/
+  `buildMessages`/`prices`/`confidenceThreshold` inyectables), `src/middleware/{auth,logger,error}.ts`
+  (auth `x-api-key`; logger **pino** JSON; handler central que **no** filtra PII), `src/utils/errors.ts`
+  (`HttpError`), `src/services/solicitud.service.ts`, `src/routes/{solicitudes,index}.ts`. **Envelope**
+  `{ ok, data }` / `{ ok:false, error:{ message, code, issues? } }`. **Idempotencia** por `id` +
+  `contenido_raw` exacto: replay → **200** (sin llamar al modelo), distinto → **409**; carrera resuelta
+  con `UNIQUE(id)` (`P2002`). **Paginación** `{ items, itemCount, currentPage, totalPages, limit }`
+  (`page`=1, `limit`=20, máx 100). **PATCH** = clasificación vigente + `requiere_revision`
+  (UUID `patch_id`, una fila `Correccion` por campo cambiado; sin cambios → 400). Códigos: 201/200/400/
+  401/404/409/502. `contenido_raw` y `contenido_mascarado` **nunca** salen. `prompts/` **movido a
+  `src/prompts/`** (por `rootDir`). 87 tests verdes; smoke end-to-end en server real (MOCK) OK.
+  **`scripts/smoke-api.ts`** (`npm run smoke` / `make smoke`): cliente `fetch` que corre los 14
+  escenarios contra un server levantado (`--base-url`/`--api-key`), ids `SMOKE-<timestamp>`, sale ≠0 si falla.
 - **F4**: `data/mensajes.json` (Anexo A), `src/agents/classifier/{pool,run-batch}.ts` (`p-limit` +
   `allSettled`, fallos aislados, orden preservado), `src/llm/factory.ts` (proveedor real/mock),
   `scripts/generate-results.ts` + `npm run results` / `make results`. **`data/resultados.json` real (12/12)** con el

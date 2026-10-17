@@ -1,4 +1,4 @@
-import type { LlmMessage } from '../src/llm/types.js';
+import type { LlmMessage } from '../llm/types.js';
 
 /**
  * Prompt v1 — fuera de la lógica de negocio (versionado por archivo).

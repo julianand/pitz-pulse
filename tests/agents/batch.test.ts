@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildMessages } from '../../prompts/classify.v1.js';
+import { buildMessages } from '../../src/prompts/classify.v1.js';
 import { mapWithConcurrency } from '../../src/agents/classifier/pool.js';
 import { runBatch } from '../../src/agents/classifier/run-batch.js';
 import type { LlmProvider, LlmRequest, LlmResponse } from '../../src/llm/types.js';
