@@ -73,7 +73,7 @@ pitz-pulse/
 │  └─ eval.ts
 ├─ src/
 │  ├─ config/{env.ts,prices.ts}
-│  ├─ llm/{client.ts,retry.ts,repair.ts,mock.ts,types.ts}
+│  ├─ llm/{client.ts,factory.ts,retry.ts,repair.ts,mock.ts,types.ts}
 │  ├─ agents/classifier/{index.ts,run-batch.ts,pool.ts}
 │  ├─ utils/{schemas.ts,masking.ts}
 │  ├─ db/{client.ts,solicitud.repo.ts,correccion.repo.ts,model-call-log.repo.ts}

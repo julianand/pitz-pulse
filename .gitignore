@@ -15,6 +15,9 @@ coverage/
 *.db-wal
 prisma/*.db*
 
+# Salida del batch en modo mock (no se commitea; el real es data/resultados.json)
+data/resultados.mock.json
+
 # SO / editor
 .DS_Store
 .idea/

@@ -34,17 +34,22 @@ curl http://localhost:3000/health
 
 ## Comandos
 
+> Los **scripts de `package.json` son la fuente de la verdad**; el `Makefile` solo delega en ellos.
+
 ```bash
-npm run dev               # servidor en desarrollo
-npm run build             # compilar a dist/
-npm run lint              # lint
-npm test                  # tests
-npm run llm:ping -- MSG-01  # probar rápido una configuración LLM (usa el .env)
-make llm-ping ARGS="MSG-01" # equivalente vía make
-make results              # genera data/resultados.json (MOCK=1 para offline)
-make eval                 # evalúa resultados.json vs etiquetas_esperadas.json
-docker compose up         # levantar todo (ver F9)
+npm run dev                  # servidor en desarrollo
+npm run build                # prisma generate + tsc → dist/
+npm test                     # tests
+npm run lint                 # lint
+npm run llm:ping -- MSG-01   # probar una config LLM (--id MSG-xx o texto libre)
+npm run results              # genera data/resultados.json (MOCK=1 para offline)
+npm run eval                 # evalúa resultados.json vs etiquetas_esperadas.json
+npm run db:migrate           # migraciones Prisma (db:generate / db:deploy / db:reset)
+docker compose up            # levantar todo (ver F9)
 ```
+
+Equivalentes vía `make` (mismos scripts): `make dev`, `make build`, `make test`, `make lint`,
+`make llm-ping ARGS="MSG-01"`, `make results`, `make eval`.
 
 ### Probar la configuración del LLM (`llm:ping`)
 
@@ -57,6 +62,14 @@ servidor.
 - Modo **mock** (sin API): `MOCK=1 npm run llm:ping -- MSG-01`.
 - El **costo** usa `PRICE_INPUT_PER_1M` y `PRICE_OUTPUT_PER_1M` del `.env`; si están en `0`, el
   costo sale `$0` (cargá los precios reales del modelo para verlo).
+
+### Generar `resultados.json` (`results`)
+
+`npm run results` clasifica los 12 mensajes de `data/mensajes.json`, escribe `data/resultados.json`
+y persiste en la BD (idempotente) + `model_call_logs`.
+
+- Con **`MOCK=1`**: **no** escribe en la BD y genera **`data/resultados.mock.json`** (deja
+  `data/resultados.json` intacto). Útil para probar el pipeline sin API ni tocar datos.
 
 ## Documentación
 

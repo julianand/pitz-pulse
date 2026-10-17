@@ -2,7 +2,7 @@
 
 > Contexto operativo para agentes de IA que trabajen en este repositorio.
 > **Mantener actualizado en cada fase**: la sección "Estado de fases" es la que más cambia.
-> Última actualización: F3 (completada).
+> Última actualización: F4 (completada).
 
 ## 1. Qué es este proyecto
 
@@ -67,7 +67,7 @@ prisma/          schema.prisma · migrations/
 scripts/         ping-llm.ts · generate-results.ts · eval.ts
 src/
   config/        env.ts · prices.ts
-  llm/           client.ts · retry.ts · repair.ts · mock.ts · types.ts
+  llm/           client.ts · factory.ts · retry.ts · repair.ts · mock.ts · types.ts
   agents/classifier/  index.ts · run-batch.ts · pool.ts
   utils/         schemas.ts · masking.ts
   db/            client.ts · solicitud.repo.ts · correccion.repo.ts · model-call-log.repo.ts
@@ -85,15 +85,22 @@ PLAN.md
 
 ## 5. Comandos
 
+**La fuente de la verdad son los scripts de `package.json`**; el `Makefile` solo delega en ellos.
+
 ```
-npm run dev          # servidor en desarrollo
-npm run build        # compilar
-npm run lint         # lint
-npm test             # tests (Vitest, sin API real)
-make results         # generar data/resultados.json  (MOCK=1 para offline)
-make eval            # evaluar resultados.json vs etiquetas_esperadas.json
-docker compose up    # levantar todo (verificación diferida, ver PLAN.md F9)
+npm run dev                  # servidor en desarrollo
+npm run build                # prisma generate + tsc
+npm test                     # tests (Vitest, sin API real)
+npm run lint                 # lint
+npm run llm:ping -- MSG-01   # probar una config LLM (--id MSG-xx o texto libre)
+npm run results              # genera data/resultados.json (MOCK=1 para offline)
+npm run eval                 # evalúa resultados.json vs etiquetas_esperadas.json
+npm run db:migrate           # migraciones Prisma (db:generate/db:deploy/db:reset)
+docker compose up            # levantar todo (verificación diferida, ver PLAN.md F9)
 ```
+
+Equivalentes cortos vía `make` (mismos scripts): `make test`, `make results`, `make eval`,
+`make llm-ping ARGS="MSG-01"`, `make dev`, `make build`.
 
 ## 6. Convenciones
 
@@ -104,6 +111,8 @@ docker compose up    # levantar todo (verificación diferida, ver PLAN.md F9)
 - **No filtrar PII**: revisar logs, errores y `resumen` generado.
 - Errores manejados explícitamente; sin `catch` silenciosos.
 - Commits **por fase, los hace el autor**; el agente **nunca** commitea.
+- **Los scripts npm son la fuente de la verdad** (incluye `results`, `eval`, `llm:ping`, `db:*`);
+  el `Makefile` solo delega en `npm run …`.
 - No llamar a la API real en tests; usar modo mock.
 
 ## 7. Flujo de trabajo por fases
@@ -130,7 +139,7 @@ docker compose up    # levantar todo (verificación diferida, ver PLAN.md F9)
 | F1 — Dominio (Zod + masking) | ✅ Completa | `clasificacionSchema` + `maskSensitive`; 27 tests |
 | F2 — LLM (prompt + retries + mock) | ✅ Completa | `classifySolicitud` + retry/backoff + repair + mock; header `x-opencode-session` = id solicitud; probado con proveedor real |
 | F3 — Persistencia (Prisma) | ✅ Completa | Prisma 6.19.3 + SQLite; enums+Json; WAL; repos con Zod pre-write; 68 tests |
-| F4 — Batch + `resultados.json` | ⬜ No iniciada | |
+| F4 — Batch + `resultados.json` | ✅ Completa | `run-batch`+`pool` (pLimit/allSettled), `mensajes.json`, `resultados.json` real (12/12), persistencia idempotente |
 | F5 — API HTTP | ⬜ No iniciada | |
 | F6 — Evaluación + calibración | ⬜ No iniciada | |
 | F7 — Frontend React (mínimo) | ⬜ No iniciada | |
@@ -142,6 +151,13 @@ Leyenda: ⬜ No iniciada · ⏳ En curso · ✅ Completa · ⛔ Bloqueada
 
 ## 9. Hechos / decisiones vivas (append)
 
+- **F4**: `data/mensajes.json` (Anexo A), `src/agents/classifier/{pool,run-batch}.ts` (`p-limit` +
+  `allSettled`, fallos aislados, orden preservado), `src/llm/factory.ts` (proveedor real/mock),
+  `scripts/generate-results.ts` + `npm run results` / `make results`. **`data/resultados.json` real (12/12)** con el
+  modelo `deepseek-v4.1-flash`, ordenado por `id`. Persiste en BD de forma **idempotente**
+  (si el `id` existe, no sobrescribe) + `model_call_logs`. Real: tokens=7603, costo≈$0.00178,
+  latencia_prom≈2418ms. **`MOCK=1`**: no escribe en BD y genera `data/resultados.mock.json`
+  (deja `resultados.json` intacto). `ping-llm` acepta `--id MSG-xx` y lee `mensajes.json`.
 - **F3**: **Prisma 6.19.3 + SQLite** (fijado, ver nota abajo). Tablas `solicitudes`/`correcciones`/
   `model_call_logs`, props **snake_case**, **enums Prisma** + `clasificacion_original` **Json**.
   Índices: `solicitudes`(categoria, prioridad, area_sugerida, requiere_revision, created_at),
