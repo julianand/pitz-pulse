@@ -14,15 +14,28 @@ export interface OpenAiProviderOptions {
   temperature: number;
   timeoutMs: number;
   maxRetries: number;
-  /** `off`/`none`/vacío = no enviar el parámetro. */
+  /**
+   * Esfuerzo de razonamiento del proveedor. Se envía **solo si es un valor válido**
+   * (`none|minimal|low|medium|high|xhigh|max`).
+   *
+   * ⚠️ En opencode-go el reasoning viene **activado por defecto**: para **desactivarlo**
+   * hay que enviar `none`. Poner `off` o dejarlo vacío **no** lo desactiva (simplemente
+   * omite el parámetro y rige el default del proveedor). Desactivarlo dio una mejora
+   * notable de latencia (~7s → ~2s).
+   */
   reasoningEffort: string;
   /** Valor por defecto del header `x-opencode-session` si el request no trae `sessionId`. */
   sessionId: string;
   onRetry?: RetryOptions['onRetry'];
 }
 
+/**
+ * Solo se envía `reasoning_effort` cuando el valor es válido para el proveedor. Cualquier
+ * otro valor (p. ej. `off` o vacío) hace que **no** se envíe el parámetro, y entonces rige
+ * el default del proveedor (reasoning **activado**). Para desactivar el razonamiento: `none`.
+ */
 function shouldSendReasoningEffort(effort: string): boolean {
-  return !['', 'off', 'none'].includes(effort.toLowerCase());
+  return ["none", "minimal", "low", "medium", "high", "xhigh", "max"].includes(effort.toLowerCase());
 }
 
 async function createCompletion(

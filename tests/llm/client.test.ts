@@ -19,7 +19,7 @@ function completionResponse(): Response {
   });
 }
 
-function provider(): ReturnType<typeof createOpenAiProvider> {
+function provider(reasoningEffort = 'off'): ReturnType<typeof createOpenAiProvider> {
   return createOpenAiProvider({
     apiKey: 'test-key',
     baseURL: 'https://example.test/v1',
@@ -27,7 +27,7 @@ function provider(): ReturnType<typeof createOpenAiProvider> {
     temperature: 0,
     timeoutMs: 1_000,
     maxRetries: 0,
-    reasoningEffort: 'off',
+    reasoningEffort,
     sessionId: 'default-session',
   });
 }
@@ -79,5 +79,27 @@ describe('createOpenAiProvider', () => {
     expect(body.response_format).toEqual({ type: 'json_object' });
     expect(body.temperature).toBe(0);
     expect(body.reasoning_effort).toBeUndefined();
+  });
+
+  it('envía reasoning_effort="none" (así se desactiva el razonamiento)', async () => {
+    const fetchMock = vi.fn(async () => completionResponse());
+    vi.stubGlobal('fetch', fetchMock);
+
+    await provider('none').complete({ messages: [{ role: 'user', content: 'hola' }] });
+
+    const init = fetchMock.mock.calls[0]?.[1] as RequestInit;
+    const body = JSON.parse(String(init.body)) as Record<string, unknown>;
+    expect(body.reasoning_effort).toBe('none');
+  });
+
+  it('envía reasoning_effort cuando es un valor válido (p. ej. "high")', async () => {
+    const fetchMock = vi.fn(async () => completionResponse());
+    vi.stubGlobal('fetch', fetchMock);
+
+    await provider('high').complete({ messages: [{ role: 'user', content: 'hola' }] });
+
+    const init = fetchMock.mock.calls[0]?.[1] as RequestInit;
+    const body = JSON.parse(String(init.body)) as Record<string, unknown>;
+    expect(body.reasoning_effort).toBe('high');
   });
 });

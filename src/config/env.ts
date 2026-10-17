@@ -29,7 +29,10 @@ const EnvSchema = z.object({
   LLM_TEMPERATURE: z.coerce.number().min(0).max(2).default(0),
   LLM_TIMEOUT_MS: z.coerce.number().int().positive().default(30_000),
   LLM_MAX_RETRIES: z.coerce.number().int().min(0).default(3),
-  LLM_REASONING_EFFORT: z.string().default('off'),
+  // Solo se envía si es un valor válido (`none|minimal|low|medium|high|xhigh|max`).
+  // ⚠️ En opencode-go el reasoning viene ACTIVADO por defecto: para desactivarlo hay que usar
+  // `none`. `off`/vacío NO lo desactiva (omite el parámetro y rige el default) → ~7s vs ~2s.
+  LLM_REASONING_EFFORT: z.string().default('none'),
   /** Identificador de sesión para el proveedor (opencode-go: header `x-opencode-session`). */
   LLM_SESSION_ID: z.string().default('pitz-pulse'),
 

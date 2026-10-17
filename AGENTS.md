@@ -153,6 +153,10 @@ Leyenda: ⬜ No iniciada · ⏳ En curso · ✅ Completa · ⛔ Bloqueada
 - **Decisión Prisma**: se usa **6.19.3**, no la 7/8, porque Prisma 7+ (cliente Rust-free) exige
   *driver adapters* e imports con extensión `.ts`, incompatibles con nuestro build `tsc` (emit).
   Prisma ≥6.2 soporta `enum` y `Json` en SQLite.
+- **`reasoning_effort` (importante)**: en opencode-go el razonamiento viene **activado por defecto**.
+  El cliente solo envía el parámetro si es un **valor válido** (`none|minimal|low|medium|high|xhigh|max`);
+  `off` o vacío **NO** lo desactiva (se omite y rige el default del proveedor). Para desactivarlo hay que
+  usar **`none`** (default en `env.ts` y `.env.example`). Desactivarlo mejoró la latencia (~7s → ~2s).
 - **F2.1 (refinamientos)**: header **`x-opencode-session` por request** con el **`id` de la solicitud**
   (fallback a `LLM_SESSION_ID`); script **`npm run llm:ping -- MSG-01`** (y `make llm-ping`) documentado
   en README; **costo estimado** en métricas vía `src/config/prices.ts` + `PRICE_*_PER_1M`. **Validado

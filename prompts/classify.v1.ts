@@ -19,7 +19,7 @@ Reglas de clasificación:
 - confianza: número entre 0 y 1 que refleje qué tan segura es la clasificación.
 - version_prompt: "${VERSION}".
 
-Devolvé SOLO un objeto JSON con exactamente estas claves: id, categoria, prioridad, area_sugerida, idioma, resumen, requiere_info, pregunta_seguimiento, confianza, version_prompt. Sin markdown, sin comentarios y sin texto adicional.`;
+Devuelve SOLO un objeto JSON con exactamente estas claves: id, categoria, prioridad, area_sugerida, idioma, resumen, requiere_info, pregunta_seguimiento, confianza, version_prompt. Sin markdown, sin comentarios y sin texto adicional.`;
 
 export interface PromptInput {
   id: string;
