@@ -1,0 +1,69 @@
+name: CI
+
+# Corre en cada push (toda rama) y en cada pull request.
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+# Si llegan commits nuevos, cancela la corrida anterior de la misma rama.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint-test:
+    name: Lint + tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Node
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      # Los tests corren en modo mock (NODE_ENV=test vía vitest.config.ts) y crean
+      # su propia BD SQLite (prisma/test.db) — no necesitan API key ni secretos.
+      - name: Tests (Vitest, sin API real)
+        run: npm test
+
+  tipos-build:
+    name: Tipos + build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Node
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Tipos (src)
+        run: npm run typecheck
+
+      - name: Tipos (scripts)
+        run: npx tsc -p scripts/tsconfig.json
+
+      - name: Tipos (tests)
+        run: npx tsc -p tests/tsconfig.json
+
+      - name: Build backend
+        run: npm run build:server
