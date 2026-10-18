@@ -19,6 +19,8 @@ export interface AppDeps {
   buildMessages?: (input: ClassifyInput) => LlmMessage[];
   prices?: ModelPrices;
   confidenceThreshold?: number;
+  /** Directorio del build del frontend que sirve Express (`false` = no servir estáticos). */
+  webDist?: string | false;
 }
 
 /**
@@ -53,13 +55,17 @@ export function createApp(deps: AppDeps = {}): Express {
 
   // Frontend compilado (`web/dist`): se sirve en el mismo origen (sin CORS). Si no
   // existe el build, se omite y las rutas desconocidas siguen respondiendo JSON 404.
-  if (env.WEB_DIST) {
-    const webDist = resolve(process.cwd(), env.WEB_DIST);
+  const webDistConfig = deps.webDist === undefined ? env.WEB_DIST : deps.webDist;
+
+  if (webDistConfig) {
+    const webDist = resolve(process.cwd(), webDistConfig);
 
     if (existsSync(webDist)) {
       app.use(express.static(webDist));
 
-      // Fallback SPA: cualquier GET que no sea de la API devuelve `index.html`.
+      // Fallback SPA: solo para **navegaciones del navegador**, que piden `text/html`
+      // explícitamente. Un `Accept: */*` (fetch/curl/Postman) NO debe recibir HTML: tiene
+      // que seguir siendo el 404 JSON de la API.
       app.use((req, res, next) => {
         if (req.method !== 'GET' && req.method !== 'HEAD') {
           next();
@@ -69,7 +75,7 @@ export function createApp(deps: AppDeps = {}): Express {
           next();
           return;
         }
-        if (!req.accepts('html')) {
+        if (!req.headers.accept?.includes('text/html')) {
           next();
           return;
         }

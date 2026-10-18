@@ -1,13 +1,26 @@
-# Levanta la app completa. Verificación real diferida a F9 (Docker no instalado aún).
+# Levanta la app completa (backend + frontend servido por Express) en un solo contenedor.
+# La BD SQLite persiste en el volumen `pulse-data`, montado en /app/data.
 services:
   app:
-    build: .
+    build:
+      context: .
+      # La key del frontend se hornea en el bundle al construir: se toma del `.env`
+      # (la misma que el backend usa en API_KEY). Si cambia, hay que reconstruir la imagen.
+      args:
+        VITE_API_KEY: ${API_KEY:-change-me}
     ports:
       - '3000:3000'
+    # Variables del contenedor: pisan lo que venga de `.env` (env_file).
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      WEB_DIST: web/dist
+      DATABASE_URL: file:/app/data/pulse.db
+      # `MOCK=1 docker compose up` levanta sin llamar a la API real del modelo.
+      MOCK: ${MOCK:-0}
     env_file:
       - .env
     volumes:
-      # Persistencia de la base SQLite (se ajusta en F3 cuando exista prisma/).
       - pulse-data:/app/data
     healthcheck:
       test: ['CMD', 'wget', '--spider', '-q', 'http://localhost:3000/health']

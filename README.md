@@ -7,10 +7,9 @@ clasifica con un modelo de lenguaje, los persiste y permite consultarlos y corre
 
 ## Estado
 
-**Entrega completa (F0–F7).** Todas las fases están implementadas y verificadas. Queda pendiente la
-**verificación de Docker** (`docker compose up`), que se hace en **F9** (Docker no está instalado en la
-máquina del autor). Ver [`PLAN.md`](./PLAN.md) para el plan por fases y [`AGENTS.md`](./AGENTS.md) para
-el contexto operativo.
+**Entrega completa (F0–F9).** Todas las fases están implementadas y verificadas, incluido
+`docker compose up --build`. Ver [`PLAN.md`](./PLAN.md) para el plan por fases y [`AGENTS.md`](./AGENTS.md)
+para el contexto operativo.
 
 ## Stack
 
@@ -61,32 +60,89 @@ tipos); quedó documentado y cerrado.
 ## Requisitos
 
 - Node.js >= 20 (desarrollo con Node 24).
-- Docker (para `docker compose up`; la verificación se realiza en F9).
+- Docker (opcional): para correr todo con `docker compose up --build`.
 
 ## Cómo levantar (desarrollo)
 
 ```bash
-cp .env.example .env    # completar variables
-npm install
-npm run web:install     # deps del frontend (una vez)
-npm run dev             # backend (3000) + frontend (5173) juntos
+cp .env.example .env            # 1) variables del backend
+cp web/.env.example web/.env    # 2) variables del frontend  ← ¡no te lo saltees!
+npm install                     # deps del backend
+npm run web:install             # deps del frontend (una vez)
+npm run dev                     # backend (3000) + frontend (5173) juntos
 curl http://localhost:3000/health
 ```
+
+> ⚠️ **Hay que copiar los dos `.env`.** El del frontend (`web/.env`) es el que le da la API key a la
+> UI: si falta, la UI usa `change-me`, no coincide con el backend y la API responde **401**.
+> Los dos ejemplos traen `change-me`, así que **coinciden sin tocar nada**.
 
 `npm run dev` usa `concurrently` y levanta los dos procesos; también se pueden correr por separado:
 `npm run dev:server` (Express en `:3000`) y `npm run dev:web` (Vite en `:5173`, con **proxy** a la API).
 
+### Lo mínimo para probar
+
+| Variable | Archivo | Qué poner |
+|---|---|---|
+| `MOCK` | `.env` | **`1`** = no llama al modelo (no necesitás claves). `0` = real. |
+| `API_KEY` | `.env` | key que exige la API (default `change-me`) |
+| `VITE_API_KEY` | `web/.env` | **la misma** que `API_KEY` |
+| `LLM_PROVIDER_BASE_URL` | `.env` | URL del endpoint **OpenAI-compatible** (obligatorio; solo si `MOCK=0`) |
+| `LLM_API_KEY` | `.env` | clave del proveedor (solo si `MOCK=0`) |
+| `LLM_MODEL` | `.env` | modelo (default `deepseek-v4.1-flash`) |
+
+- **Rápido y gratis**: `MOCK=1` → probás API + UI + corrección sin claves ni costo.
+- **Con modelo real**: `MOCK=0` + `LLM_PROVIDER_BASE_URL`, `LLM_API_KEY` y `LLM_MODEL`.
+- `npm test` y `npm run eval` **no necesitan claves** (corren offline).
+
+### Variables del `.env` (backend)
+
+| Variable | Default | Para qué |
+|---|---|---|
+| `NODE_ENV` | `development` | `development` / `test` / `production` |
+| `PORT` | `3000` | puerto del server |
+| `LOG_LEVEL` | `info` | nivel de logs (pino) |
+| `API_KEY` | `change-me` | key que exige la API (header `x-api-key`) |
+| `WEB_DIST` | `web/dist` | build del frontend que sirve Express (vacío = no sirve estáticos) |
+| `DATABASE_URL` | `file:./dev.db` | SQLite (ruta relativa al schema de Prisma) |
+| `LLM_PROVIDER_BASE_URL` | — | endpoint **OpenAI-compatible** (obligatorio: se usa el SDK de OpenAI) |
+| `LLM_API_KEY` | — | clave del proveedor |
+| `LLM_MODEL` | `deepseek-v4.1-flash` | modelo a usar |
+| `LLM_TEMPERATURE` | `0` | temperatura de muestreo |
+| `LLM_TIMEOUT_MS` | `30000` | timeout por request |
+| `LLM_MAX_RETRIES` | `3` | reintentos (red/timeout/408/409/429/5xx) |
+| `LLM_REASONING_EFFORT` | `none` | razonamiento del proveedor; **`none` lo apaga** (`off`/vacío NO lo desactiva) |
+| `LLM_SESSION_ID` | `pitz-pulse` | fallback del header `x-opencode-session` (el flujo real manda el `id`) |
+| `PROMPT_VERSION` | `v2` | versión del prompt (`v1` / `v2`) |
+| `CONFIDENCE_THRESHOLD` | `0.75` | debajo de esto → `requiere_revision` |
+| `CONCURRENCY_LIMIT` | `4` | concurrencia del batch |
+| `PRICE_INPUT_PER_1M` / `PRICE_OUTPUT_PER_1M` | `0.15` / `0.60` | precios (ejemplo) para estimar el costo |
+| `MOCK` | `0` | `1` = no llama a la API real del modelo |
+
+### Variables del `web/.env` (frontend)
+
+| Variable | Default | Para qué |
+|---|---|---|
+| `VITE_API_KEY` | `change-me` | key que manda la UI (debe coincidir con `API_KEY`); se hornea al compilar |
+| `VITE_API_BASE_URL` | *(vacío)* | base de la API; vacío = mismo origen (evita CORS) |
+| `VITE_PROXY_TARGET` | `http://localhost:3000` | a dónde proxya Vite en desarrollo |
+
+> En **Docker** no hace falta `web/.env`: la key se toma de `API_KEY` (build arg). Ver la sección **Docker**.
+
 ## Docker
 
-`Dockerfile` (multi-stage: backend + frontend) y `docker-compose.yml` (expone `:3000` y monta un
-volumen para la BD SQLite) están en el repo:
+Imagen única (`Dockerfile` multi-stage: compila backend con `tsc` y frontend con Vite) servida por
+Express. La BD SQLite persiste en el volumen nombrado `pulse-data` (montado en `/app/data`).
 
 ```bash
-docker compose up --build
+docker compose up --build          # http://localhost:3000  (aplica migraciones al arrancar)
+MOCK=1 docker compose up --build   # sin llamar a la API real del modelo
+docker compose down                # conserva el volumen (los datos persisten)
+docker compose down -v             # borra también el volumen (arranque limpio)
 ```
 
-⚠️ **Pendiente de verificación local**: Docker no está instalado en la máquina del autor, así que este
-camino **se valida en F9** (ver [`PLAN.md`](./PLAN.md) §F9). El resto del proyecto corre con Node local.
+Verificado: migraciones aplicadas al primer arranque (`prisma migrate deploy`), `GET /health` 200, UI
+en `:3000`, y los datos sobreviven a un `down` + `up`. Las claves entran por `env_file: .env`.
 
 ## API HTTP
 
@@ -158,7 +214,7 @@ npm run smoke                # smoke test de la API (server ya levantado)
 npm run results              # genera data/resultados.<version>.json + data/resultados.json (MOCK=1 para offline)
 npm run eval                 # evalúa resultados vs etiquetas_esperadas (offline)
 npm run db:migrate           # migraciones Prisma (db:generate / db:deploy / db:reset)
-docker compose up            # levantar todo (ver F9)
+docker compose up --build   # levantar todo (app + volumen SQLite)
 ```
 
 Equivalentes vía `make` (mismos scripts): `make dev`, `make dev-server`, `make dev-web`,
@@ -276,10 +332,15 @@ build (`web/dist`) en **el mismo origen**, así que no hay CORS.
 
 ### API key del frontend (riesgo asumido)
 
-La UI necesita `x-api-key`. Para este case se deja **quemada en el bundle** vía `VITE_API_KEY`
-(ver `web/.env.example`): **cualquiera que abra la UI puede leerla**. Si cambia `API_KEY` en el
-backend, hay que cambiarla también en `web/.env` (o en el fallback de `web/src/api/client.ts`) y
-recompilar. La alternativa más segura sería un proxy same-origin que inyecte la key server-side.
+La UI necesita `x-api-key`. Para este case se deja **quemada en el bundle** al compilar vía
+`VITE_API_KEY`: **cualquiera que abra la UI puede leerla** (es inevitable en una app de navegador).
+
+- **Local**: se toma de `web/.env` (ver `web/.env.example`); al cambiarla, recompilar.
+- **Docker**: `docker-compose.yml` la pasa como *build arg* desde tu `.env`
+  (`build.args: VITE_API_KEY: ${API_KEY}`), así **la UI y el backend usan la misma key**. Si la
+  cambiás, hay que reconstruir la imagen: `docker compose up -d --build`.
+
+La alternativa más segura sería un proxy same-origin que inyecte la key del lado servidor.
 
 ```bash
 # Desarrollo (HMR): Vite en :5173 con proxy a la API.
@@ -304,8 +365,6 @@ calibrada (ver más abajo) y por eso se trata como política de revisión.
 
 **Pendientes y limitaciones conocidas** (qué falta, por qué quedó así y cómo se resolvería):
 
-- **`docker compose up` sin verificar**: Docker no está instalado en la máquina. Se priorizó el resto y
-  el compose queda escrito; se resuelve instalando Docker (F9).
 - **Calibración de `confianza`**: con **n=12** no se puede establecer calibración (fiabilidad ≠
   discriminación); se estima que harían falta **~100 mediciones por bucket**. Se resuelve acumulando
   corridas y midiendo el gap por bucket.

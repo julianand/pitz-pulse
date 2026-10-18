@@ -272,6 +272,9 @@ el historial real de commits es requisito del PDF).
   accesibles, migraciones aplicadas en el arranque.
 - **Aceptación**: arranque limpio en un clon nuevo. Si no hay Docker a tiempo, dejar documentado en
   el README el estado y cómo verificarlo.
+- **Estado**: **completada** (Docker Desktop). Build + `MOCK=1 docker compose up` OK; migraciones al
+  primer arranque; `GET /health` 200; UI en `:3000`; persistencia verificada. Fix de build: `web/` con
+  `@types/node` (`vite.config.ts` usa `process`).
 
 ### F10 — Extras opcionales (solo si sobra tiempo)
 - CI (GitHub Actions: lint + test).

@@ -2,7 +2,7 @@
 
 > Contexto operativo para agentes de IA que trabajen en este repositorio.
 > **Mantener actualizado en cada fase**: la sección "Estado de fases" es la que más cambia.
-> Última actualización: F8 (completada).
+> Última actualización: F9 (completada).
 
 ## 1. Qué es este proyecto
 
@@ -153,13 +153,26 @@ Equivalentes cortos vía `make` (mismos scripts): `make test`, `make smoke`, `ma
 | F6 — Evaluación + calibración | ✅ Completa | Eval offline (no dudosos vs dudosos + barrido de umbral) + registry `PROMPT_VERSION` + `resultados.<version>.json`; **v2 aplicado** (requiere_info 58→92; no dudosos 97.9%) |
 | F7 — Frontend React (mínimo) | ✅ Completa | `web/` (React 19 + Vite + Tailwind v4, skill `minimalist-ui`, tipografía **Geist** self-hosted); Express sirve `web/dist` (same-origin); lista/detalle(diff+historial)/PATCH/alta; **topbar `#C2410C` y filtros fijos**, **dark mode por SO**, **`id` opcional**; `dev`/`build` con `concurrently` |
 | F8 — Docs y empaquetado | ✅ Completa | README final + `.env.example` con precios de ejemplo + métrica *por documento* en el eval; correcciones puntuales en DECISIONES/AI_LOG; **el empaquetado Docker se pasa a F9** |
-| F9 — Docker (verificación diferida) | ⬜ No iniciada | Requiere Docker instalado |
+| F9 — Docker (verificación diferida) | ✅ Completa | Imagen multi-stage verificada: migraciones al arranque, health/UI OK y BD persistente en el volumen; fix `@types/node` en `web/` |
 | F10 — Extras opcionales | ⬜ No iniciada | |
 
 Leyenda: ⬜ No iniciada · ⏳ En curso · ✅ Completa · ⛔ Bloqueada
 
 ## 9. Hechos / decisiones vivas (append)
 
+- **F9 (completa)**: Docker verificado con **Docker Desktop**. Base **`node:24-alpine` + `openssl`**
+  (Prisma sobre musl); el runtime copia `prisma/`, corre `prisma generate` y arranca con
+  **`prisma migrate deploy && node dist/index.js`**; **`.dockerignore`** nuevo; `docker-compose` con
+  volumen **`pulse-data:/app/data`**, `DATABASE_URL=file:/app/data/pulse.db`, `NODE_ENV=production` y
+  `MOCK: ${MOCK:-0}` (para `MOCK=1 docker compose up`). **Verificado**: build OK, migraciones aplicadas
+  al primer arranque, `GET /health` 200, UI en `:3000`, POST/GET OK y **datos persistentes** tras
+  `down`+`up` (2º arranque: *“No pending migrations to apply”*). **Fix de build**: `web/` ahora declara
+  **`@types/node`** + `types: ["vite/client","node"]` (el `tsc --noEmit` de `vite.config.ts` usa
+  `process`; localmente lo resolvía del `node_modules` raíz, que no existe dentro de la imagen).
+  **API key del frontend en Docker**: `Dockerfile` (`build-web`) recibe **`ARG VITE_API_KEY`** y
+  `docker-compose.yml` la pasa como *build arg* desde tu `.env` (`VITE_API_KEY: ${API_KEY}`) → la UI
+  y el backend comparten la key (verificado: el bundle contiene la key y la UI lista las solicitudes
+  desde el contenedor). Cambiarla requiere `--build`.
 - **F8 (completa)**: docs finales. `README.md` con estado final, fila **“todos los campos (documento)”**
   (v1 8.3% → v2 **66.7%**) y sección **Docker** (verificación diferida a F9). `npm run eval` ahora
   reporta la métrica **por documento** (`MetricasDocumento` en `src/eval/metrics.ts`). `.env.example`

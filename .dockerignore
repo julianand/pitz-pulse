@@ -1,0 +1,30 @@
+# Contexto de build: dejar sólo lo necesario (build más rápido y liviano).
+node_modules
+web/node_modules
+dist
+web/dist
+coverage
+*.log
+
+# Git y metadatos
+.git
+.gitignore
+.dockerignore
+
+# Entorno: las claves entran en runtime por `env_file`, no al build.
+.env
+.env.*
+web/.env
+web/.env.*
+
+# BD local y salidas no versionadas
+prisma/*.db
+prisma/*.db-journal
+prisma/*.db-wal
+prisma/*.db-shm
+data/resultados.mock.json
+
+# No hacen falta en la imagen
+.agents
+ai_transcription.md
+.DS_Store
