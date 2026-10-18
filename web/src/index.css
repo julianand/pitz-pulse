@@ -1,9 +1,8 @@
 @import 'tailwindcss';
 
 @theme {
-  --font-sans: 'Instrument Sans', 'SF Pro Display', 'Helvetica Neue', system-ui, sans-serif;
-  --font-serif: 'Newsreader', 'Lyon Text', 'Instrument Serif', Georgia, serif;
-  --font-mono: 'JetBrains Mono', 'SF Mono', ui-monospace, monospace;
+  --font-sans: 'Geist Variable', 'Geist', 'SF Pro Display', 'Helvetica Neue', system-ui, sans-serif;
+  --font-mono: 'Geist Mono Variable', 'Geist Mono', 'SF Mono', ui-monospace, monospace;
 
   --color-canvas: #f7f6f3;
   --color-surface: #ffffff;
@@ -14,10 +13,9 @@
   --color-line: #eaeaea;
   --color-line-soft: rgba(0, 0, 0, 0.06);
 
-  /* Marca (topbar): igual en claro y oscuro. */
-  --color-brand: #fd3333;
+  /* Marca (topbar): igual en claro y oscuro. Naranja quemado, calmo. */
+  --color-brand: #c2410c;
   --color-brand-fg: #ffffff;
-  --color-brand-hover: #d92b2b;
 
   --color-tone-red: #9f2f2d;
   --color-tone-red-bg: #fdebec;
@@ -60,7 +58,7 @@
 /* Profundidad de fondo: dos luces radiales cálidas, muy tenues (no es un gradiente decorativo). */
 @utility ambient-bg {
   background-image:
-    radial-gradient(55rem 38rem at 88% -12%, rgba(159, 47, 45, 0.045), transparent 62%),
+    radial-gradient(55rem 38rem at 88% -12%, rgba(194, 65, 12, 0.05), transparent 62%),
     radial-gradient(48rem 34rem at 4% 108%, rgba(31, 108, 159, 0.045), transparent 58%);
 }
 

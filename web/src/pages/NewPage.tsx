@@ -43,7 +43,7 @@ export function NewPage() {
       <Reveal>
         <div>
           <p className="text-xs uppercase tracking-[0.16em] text-muted">Entrada manual</p>
-          <h1 className="mt-1 font-serif text-4xl leading-none tracking-tight text-ink sm:text-5xl">
+          <h1 className="mt-1 font-semibold text-4xl leading-none tracking-tight text-ink sm:text-5xl">
             Nueva solicitud
           </h1>
           <p className="mt-3 max-w-2xl text-sm leading-relaxed text-muted">

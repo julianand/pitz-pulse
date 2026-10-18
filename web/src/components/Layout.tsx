@@ -13,7 +13,7 @@ export function Layout({ children }: { children: ReactNode }) {
       <header className="sticky top-0 z-40 h-16 bg-brand text-brand-fg">
         <div className="mx-auto flex h-full w-full max-w-5xl items-center justify-between gap-6 px-6">
           <NavLink to="/" className="flex items-baseline gap-3">
-            <span className="font-serif text-xl leading-none tracking-tight text-brand-fg">
+            <span className="font-semibold text-xl leading-none tracking-tight text-brand-fg">
               Pitz Pulse
             </span>
             <span className="hidden text-xs uppercase tracking-[0.14em] text-brand-fg/70 sm:inline">

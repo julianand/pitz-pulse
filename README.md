@@ -193,11 +193,11 @@ iteración de prompt (`src/prompts/classify.v2.ts`) atacó `requiere_info` y `ar
 ## Frontend (UI de revisión)
 
 UI mínima (extra) para **probar la API y corregir clasificaciones** desde el navegador. Vive en `web/`
-(React 19 + Vite + Tailwind v4) y el backend sirve su build (`web/dist`) en **el mismo origen**, así
-que no hay CORS.
+(React 19 + Vite + Tailwind v4, tipografía **Geist / Geist Mono** self-hosted) y el backend sirve su
+build (`web/dist`) en **el mismo origen**, así que no hay CORS.
 
 - **Lista**: filtros (`categoria`, `prioridad`, `area`, `idioma`, `requiere_revision`), paginación,
-  badge `requiere_revision` y semáforo de `confianza`. **Topbar fijo** (`#fd3333`) y **barra de filtros
+  badge `requiere_revision` y semáforo de `confianza`. **Topbar fijo** (`#C2410C`) y **barra de filtros
   fija** al hacer scroll.
 - **Detalle**: mensaje **enmascarado**, clasificación **vigente** con **diff** contra
   `clasificacion_original`, e **historial de `Correccion`** agrupado por `patch_id`.

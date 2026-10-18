@@ -36,7 +36,7 @@ export function CardHeader({
   return (
     <header className="flex items-start justify-between gap-4 border-b border-line px-6 py-4">
       <div className="min-w-0">
-        <h2 className="font-serif text-lg leading-tight tracking-tight text-ink">{title}</h2>
+        <h2 className="font-semibold text-lg leading-tight tracking-tight text-ink">{title}</h2>
         {hint ? <p className="mt-0.5 text-xs text-muted">{hint}</p> : null}
       </div>
       {action}
@@ -113,7 +113,7 @@ export function ErrorNote({ children }: { children: ReactNode }) {
 export function EmptyState({ title, hint }: { title: string; hint?: string }) {
   return (
     <div className="px-6 py-16 text-center">
-      <p className="font-serif text-lg tracking-tight text-ink">{title}</p>
+      <p className="font-semibold text-lg tracking-tight text-ink">{title}</p>
       {hint ? <p className="mt-1 text-sm text-muted">{hint}</p> : null}
     </div>
   );

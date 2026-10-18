@@ -96,7 +96,7 @@ export function ListPage() {
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
             <p className="text-xs uppercase tracking-[0.16em] text-muted">Bandeja de entrada</p>
-            <h1 className="mt-1 font-serif text-4xl leading-none tracking-tight text-ink sm:text-5xl">
+            <h1 className="mt-1 font-semibold text-4xl leading-none tracking-tight text-ink sm:text-5xl">
               Solicitudes
             </h1>
           </div>

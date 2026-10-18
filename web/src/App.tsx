@@ -7,7 +7,7 @@ import { NewPage } from './pages/NewPage';
 function NotFound() {
   return (
     <div className="py-20 text-center">
-      <p className="font-serif text-3xl tracking-tight text-ink">Página no encontrada</p>
+      <p className="font-semibold text-3xl tracking-tight text-ink">Página no encontrada</p>
       <p className="mt-2 text-sm text-muted">La ruta que buscás no existe.</p>
       <Link to="/" className="mt-6 inline-block text-sm text-ink underline underline-offset-4">
         Volver a solicitudes

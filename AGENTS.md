@@ -151,7 +151,7 @@ Equivalentes cortos vía `make` (mismos scripts): `make test`, `make smoke`, `ma
 | F4 — Batch + `resultados.json` | ✅ Completa | `run-batch`+`pool` (pLimit/allSettled), `mensajes.json`, `resultados.json` real (12/12), persistencia idempotente |
 | F5 — API HTTP | ✅ Completa | `POST/GET/GET{id}/PATCH /solicitudes` con auth `x-api-key`, idempotencia (200/409), filtros+paginación, `Correccion` en PATCH, logs pino; 87 tests |
 | F6 — Evaluación + calibración | ✅ Completa | Eval offline (no dudosos vs dudosos + barrido de umbral) + registry `PROMPT_VERSION` + `resultados.<version>.json`; **v2 aplicado** (requiere_info 58→92; no dudosos 97.9%) |
-| F7 — Frontend React (mínimo) | ✅ Completa | `web/` (React 19 + Vite + Tailwind v4, skill `minimalist-ui`); Express sirve `web/dist` (same-origin); lista/detalle(diff+historial)/PATCH/alta; **topbar `#fd3333` y filtros fijos**, **dark mode por SO**, **`id` opcional**; `dev`/`build` con `concurrently` |
+| F7 — Frontend React (mínimo) | ✅ Completa | `web/` (React 19 + Vite + Tailwind v4, skill `minimalist-ui`, tipografía **Geist** self-hosted); Express sirve `web/dist` (same-origin); lista/detalle(diff+historial)/PATCH/alta; **topbar `#C2410C` y filtros fijos**, **dark mode por SO**, **`id` opcional**; `dev`/`build` con `concurrently` |
 | F8 — Docs y empaquetado | ⬜ No iniciada | |
 | F9 — Docker (verificación diferida) | ⬜ No iniciada | Requiere Docker instalado |
 | F10 — Extras opcionales | ⬜ No iniciada | |
@@ -175,7 +175,8 @@ Leyenda: ⬜ No iniciada · ⏳ En curso · ✅ Completa · ⛔ Bloqueada
   (scripts de las skills). Sin tests de frontend (no lo pide el case). **F7.1/F7.2**: `id` **opcional**
   en el alta (la UI genera `MSG-<epoch-ms>` si viene vacío; la API sigue exigiéndolo); **dark mode**
   por `@media (prefers-color-scheme: dark)` redefiniendo los tokens (sin toggle); **topbar fijo**
-  (`--color-brand` `#fd3333`) y **filtros fijos** (`sticky top-16`); la ruta de detalle de la UI es
+  (`--color-brand` `#c2410c`) y **filtros fijos** (`sticky top-16`); tipografía **Geist / Geist Mono**
+  self-hosted (fontsource) con titulares en sans técnica (sin serif); la ruta de detalle de la UI es
   **`/solicitud/:id`** (evita colisionar con la API `/solicitudes` al recargar).
 - **F6 (completa)**: `data/etiquetas_esperadas.json` (movido desde la raíz); las `justificacion`
   ahora empiezan con **`(campo1, campo2) - …`** declarando las **props dudosas** (label ambiguo).
