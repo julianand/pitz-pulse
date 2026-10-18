@@ -130,6 +130,11 @@ function main(): void {
   tablaCampos(reporte.camposExactos);
   console.log(lineaGlobal('GLOBAL (micro)', reporte.accuracyExactos));
 
+  // Métrica "por documento": todos los campos deterministas correctos a la vez.
+  console.log(
+    `  ${'Documento (todos los 5 exactos)'.padEnd(34)} ${`${reporte.documentos.completos}/${reporte.documentos.total}`.padStart(7)}   ${pct(reporte.documentos.accuracy).padStart(6)}`,
+  );
+
   const porDuda = metricasPorDuda(reporte.items);
   console.log('\n  Por campo dudoso (mediciones; "dudoso" = label ambiguo declarado por el autor)');
   bloqueCampos('Campos NO dudosos (error real)', porDuda.noDudosos);

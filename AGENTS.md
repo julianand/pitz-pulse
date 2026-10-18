@@ -2,7 +2,7 @@
 
 > Contexto operativo para agentes de IA que trabajen en este repositorio.
 > **Mantener actualizado en cada fase**: la sección "Estado de fases" es la que más cambia.
-> Última actualización: F7 (completada).
+> Última actualización: F8 (completada).
 
 ## 1. Qué es este proyecto
 
@@ -152,7 +152,7 @@ Equivalentes cortos vía `make` (mismos scripts): `make test`, `make smoke`, `ma
 | F5 — API HTTP | ✅ Completa | `POST/GET/GET{id}/PATCH /solicitudes` con auth `x-api-key`, idempotencia (200/409), filtros+paginación, `Correccion` en PATCH, logs pino; 87 tests |
 | F6 — Evaluación + calibración | ✅ Completa | Eval offline (no dudosos vs dudosos + barrido de umbral) + registry `PROMPT_VERSION` + `resultados.<version>.json`; **v2 aplicado** (requiere_info 58→92; no dudosos 97.9%) |
 | F7 — Frontend React (mínimo) | ✅ Completa | `web/` (React 19 + Vite + Tailwind v4, skill `minimalist-ui`, tipografía **Geist** self-hosted); Express sirve `web/dist` (same-origin); lista/detalle(diff+historial)/PATCH/alta; **topbar `#C2410C` y filtros fijos**, **dark mode por SO**, **`id` opcional**; `dev`/`build` con `concurrently` |
-| F8 — Docs y empaquetado | ⬜ No iniciada | |
+| F8 — Docs y empaquetado | ✅ Completa | README final + `.env.example` con precios de ejemplo + métrica *por documento* en el eval; correcciones puntuales en DECISIONES/AI_LOG; **el empaquetado Docker se pasa a F9** |
 | F9 — Docker (verificación diferida) | ⬜ No iniciada | Requiere Docker instalado |
 | F10 — Extras opcionales | ⬜ No iniciada | |
 
@@ -160,6 +160,13 @@ Leyenda: ⬜ No iniciada · ⏳ En curso · ✅ Completa · ⛔ Bloqueada
 
 ## 9. Hechos / decisiones vivas (append)
 
+- **F8 (completa)**: docs finales. `README.md` con estado final, fila **“todos los campos (documento)”**
+  (v1 8.3% → v2 **66.7%**) y sección **Docker** (verificación diferida a F9). `npm run eval` ahora
+  reporta la métrica **por documento** (`MetricasDocumento` en `src/eval/metrics.ts`). `.env.example`
+  con **precios de ejemplo** (`0.15/0.60`) para reproducir los costos. Correcciones puntuales en
+  `DECISIONES.md` (tabla de fiabilidad ajustada a `data/resultados.v1.json`, unidades s, precios) y
+  `AI_LOG.md` (`MSG-<epoch-ms>`). **Docker** (Dockerfile/compose/`.dockerignore`) queda para **F9**
+  (checklist de pendientes técnicos en `PLAN.md §F9`).
 - **F7 (completa)**: `web/` = **React 19 + Vite + Tailwind v4** (paquete propio; `npm run web:install`),
   estilo según la skill **`minimalist-ui`** (monocromo cálido, tipografía editorial, casi sin sombras,
   pasteles para tags). Vistas: **lista** (filtros + paginación + badge `requiere_revision` + semáforo de

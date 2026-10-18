@@ -7,8 +7,10 @@ clasifica con un modelo de lenguaje, los persiste y permite consultarlos y corre
 
 ## Estado
 
-🚧 En construcción. Ver [`PLAN.md`](./PLAN.md) para el plan por fases y [`AGENTS.md`](./AGENTS.md)
-para el contexto operativo.
+**Entrega completa (F0–F7).** Todas las fases están implementadas y verificadas. Queda pendiente la
+**verificación de Docker** (`docker compose up`), que se hace en **F9** (Docker no está instalado en la
+máquina del autor). Ver [`PLAN.md`](./PLAN.md) para el plan por fases y [`AGENTS.md`](./AGENTS.md) para
+el contexto operativo.
 
 ## Stack
 
@@ -17,6 +19,44 @@ para el contexto operativo.
 - **BD**: SQLite + Prisma.
 - **Tests**: Vitest + supertest (sin llamar a la API real del modelo).
 - **Frontend**: React + Vite + Tailwind v4 (`web/`); build servido estático por Express (mismo origen, sin CORS).
+
+### Por qué Prisma 6.19.3 (no 7 ni 8)
+
+- **Alternativas:** Prisma 8.0.0-rc (Rust-free) y Prisma 7.10.1 (estable).
+- **Contra la 8 es un bloqueo:** es RC, no tiene SQLite *first-class* y su CLI ya no lee `schema.prisma` ni ofrece `migrate dev`.
+- **Contra la 7 es fricción, no incompatibilidad:** exige *driver adapter*, `prisma.config.ts` y `output` obligatorio, e imports con extensión `.ts` que chocan con el build `tsc` (emit).
+- Desde **6.2** Prisma soporta `enum` y `Json` en SQLite, así que el *fallback* a `String`/`TEXT` que estaba anotado como riesgo resultó **innecesario**.
+- Versión fijada a la rama 6.x (`^6.19.3`) con lockfile versionado; **no** usar `prisma@latest`.
+- Fuentes: estado de releases de Prisma y anuncio de Prisma 8 *(agregar enlaces)*.
+
+### Migraciones versionadas
+
+`prisma/schema.prisma`, `prisma/migrations/**` y `migration_lock.toml` se commitean; los `*.db` no.
+`migrate dev` crea, `migrate deploy` aplica (y crea la BD si no existe) y `reset` borra todo.
+
+### tsconfig de `scripts/` y `tests/`
+
+`rootDir: "src"` hace que incluir `scripts/` dé `TS6059`, y `rootDir: "."` rompería `dist/index.js` →
+hay `scripts/tsconfig.json` y `tests/tsconfig.json` con `noEmit` y `rootDir: ".."`. Hallazgo colateral:
+`npm run typecheck` incluía **0 archivos** de `scripts/` y `tests/` (Vitest transpila sin chequear
+tipos); quedó documentado y cerrado.
+
+## Modelo LLM (transporte, reintentos y caching)
+
+- **Salida estructurada:** `response_format: json_object` + validación **Zod**; si no valida, **una
+  reparación** reenviando los `error.issues` al modelo. Se descartó `json_schema` (no es confiable en
+  modelos OpenAI-compatible).
+- **Reintentos:** backoff exponencial + jitter, solo en red/timeout/**408/409/429/5xx** (nunca otros
+  4xx), `LLM_MAX_RETRIES` y `LLM_TIMEOUT_MS` por env, con `maxRetries:0` propio para no duplicar política.
+- **`reasoning_effort=none`:** el proveedor trae el razonamiento **activado por defecto** y **omitir el
+  parámetro no lo desactiva** (`off` no es un valor válido). Medición: `reasoning_tokens = 603/724` →
+  **83% de la salida era pensamiento**, y la latencia bajó de **~7 s a ~2 s**.
+- **Caching:** `cached_tokens: 512/559` → el SYSTEM fijo es el prefijo cacheado. Los tokens cacheados
+  **tienen descuento pero no son gratis**, **todo lo variable va al final**, y **cambiar de versión de
+  prompt invalida el prefijo** (por eso la primera corrida de v2 trae `cached_tokens` bajo).
+- **Sesión por solicitud:** header `x-opencode-session` con el `id` de la solicitud.
+- **Punto ciego conocido:** `onRetry` no se pasa → **los reintentos no quedan logueados** y la latencia
+  registrada incluye backoff y todos los intentos (un "7 s" puede ser una llamada o dos).
 
 ## Requisitos
 
@@ -35,6 +75,18 @@ curl http://localhost:3000/health
 
 `npm run dev` usa `concurrently` y levanta los dos procesos; también se pueden correr por separado:
 `npm run dev:server` (Express en `:3000`) y `npm run dev:web` (Vite en `:5173`, con **proxy** a la API).
+
+## Docker
+
+`Dockerfile` (multi-stage: backend + frontend) y `docker-compose.yml` (expone `:3000` y monta un
+volumen para la BD SQLite) están en el repo:
+
+```bash
+docker compose up --build
+```
+
+⚠️ **Pendiente de verificación local**: Docker no está instalado en la máquina del autor, así que este
+camino **se valida en F9** (ver [`PLAN.md`](./PLAN.md) §F9). El resto del proyecto corre con Node local.
 
 ## API HTTP
 
@@ -116,6 +168,11 @@ Equivalentes vía `make` (mismos scripts): `make dev`, `make dev-server`, `make 
 > El frontend tiene su propio `package.json` en `web/`. Instalá sus deps con `npm run web:install`
 > (una vez) o `npm --prefix web install`.
 
+> **Sin API keys:** `npm test` y `npm run eval` corren **offline** (mock y archivos ya commiteados); no
+> necesitan credenciales del modelo. Solo `npm run results` (real) y `npm run llm:ping` las requieren
+> (el entregable `data/resultados.json` ya está en el repo, así que la evaluación es reproducible sin
+> keys).
+
 ### Smoke test de la API (`smoke`)
 
 `npm run smoke` corre todos los escenarios básicos (health, auth, POST nuevo/replay/conflicto,
@@ -152,6 +209,12 @@ servidor.
 
 - Con **`MOCK=1`**: **no** escribe en la BD y genera **`data/resultados.mock.json`** (deja
   `data/resultados.json` intacto). Útil para probar el pipeline sin API ni tocar datos.
+- **Persistencia idempotente:** el batch **no sobrescribe** filas existentes, para **preservar
+  correcciones humanas**. Consecuencia asumida: tras aplicar v2, `solicitudes` conserva la
+  clasificación de v1 mientras `resultados.json` va a v2. Opciones evaluadas: **(a)** archivos
+  `resultados.<version>.json` (elegida), **(b)** `--force` que re-persista, **(c)** `id`s por versión,
+  **(d)** tabla de historial de clasificaciones. Se eligió **(a)** por ser la más simple; la divergencia
+  se resuelve re-corriendo con la BD reseteada antes de la corrida definitiva.
 
 ### Evaluar (`eval`)
 
@@ -176,7 +239,8 @@ iteración de prompt (`src/prompts/classify.v2.ts`) atacó `requiere_info` y `ar
 
 | Métrica | v1 | v2 |
 |---|---|---|
-| Global | 78.3% | **88.3%** |
+| Global (por campo) | 78.3% | **88.3%** |
+| Todos los campos (documento) | 8.3% | **66.7%** |
 | No dudosos (error real) | 87.5% | **97.9%** |
 | categoria | 91.7% | 91.7% |
 | prioridad | 75.0% | 83.3% |
@@ -184,6 +248,7 @@ iteración de prompt (`src/prompts/classify.v2.ts`) atacó `requiere_info` y `ar
 | idioma | 100% | 100% |
 | requiere_info | 58.3% | **91.7%** |
 
+- **Documento** = los **5 campos deterministas** correctos a la vez (lo reporta `npm run eval`).
 - Los campos de **texto** y los **dudosos** (ambigüedad del label) no cuentan como error real.
 - En **v2** el único error real es `MSG-12 · requiere_info`; el resto de la brecha es ambigüedad
   declarada por el autor.
@@ -229,9 +294,29 @@ npm start
 ## Documentación
 
 - [`PLAN.md`](./PLAN.md) — plan por fases, decisiones técnicas y riesgos.
-- `DECISIONES.md` — decisiones técnicas, costos y arquitectura *(pendiente)*.
-- `AI_LOG.md` — registro de uso de IA *(pendiente)*.
+- [`DECISIONES.md`](./DECISIONES.md) — decisiones técnicas, alternativas descartadas, arquitectura y costos.
+- [`AI_LOG.md`](./AI_LOG.md) — registro de uso de IA: 5 escenarios concretos (prompt real, qué devolvió, qué acepté/corregí/descarté y cómo lo verifiqué). Incluye la transcripción completa del chat principal con el agente en [`ai_transcription.md`](./ai_transcription.md).
 
 ## Supuestos y pendientes
 
-- `docker compose up` queda pendiente de verificación local (Docker no instalado aún).
+**Supuestos:** los mensajes de ejemplo se usan tal cual (Anexo A); la `confianza` del modelo no está
+calibrada (ver más abajo) y por eso se trata como política de revisión.
+
+**Pendientes y limitaciones conocidas** (qué falta, por qué quedó así y cómo se resolvería):
+
+- **`docker compose up` sin verificar**: Docker no está instalado en la máquina. Se priorizó el resto y
+  el compose queda escrito; se resuelve instalando Docker (F9).
+- **Calibración de `confianza`**: con **n=12** no se puede establecer calibración (fiabilidad ≠
+  discriminación); se estima que harían falta **~100 mediciones por bucket**. Se resuelve acumulando
+  corridas y midiendo el gap por bucket.
+- **Reintentos no logueados**: `onRetry` no se pasa, así que la latencia registrada incluye backoff y
+  todos los intentos. Se resuelve pasando `onRetry` y persistiendo el intento en `model_call_logs`.
+- **`estimateCost` sobreestima**: usa el `prompt_tokens` completo y **no descuenta `cached_tokens`**. Se
+  resuelve llevando `cachedTokens` en `LlmUsage`.
+- **Divergencia batch ↔ BD** al cambiar de versión de prompt (ver *Generar resultados*): se resuelve
+  re-corriendo con la BD reseteada antes de la corrida definitiva.
+- **`digital_transformation` con *over-firing*** (MSG-05/12): riesgo latente fuera del set de 12. Se
+  ataca en v3 acotando la regla.
+- **API key de la UI quemada en el bundle**: riesgo asumido; se resuelve con un proxy same-origin que
+  inyecte la key del lado servidor.
+- **Sin tests de frontend**: fuera del alcance del case (el PDF no los pide).

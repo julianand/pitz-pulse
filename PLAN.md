@@ -247,17 +247,27 @@ el historial real de commits es requisito del PDF).
 
 ### F8 — Empaquetado, documentación y hardening
 - **Objetivo**: entrega completa y reproducible.
-- **Archivos**: `README.md` (final), `.env.example` (completo), `docker-compose.yml`,
-  `Dockerfile`, `Makefile` (final), `DECISIONES.md` (autor), `AI_LOG.md` (autor).
+- **Archivos**: `README.md` (final), `.env.example` (completo), `Makefile` (final),
+  `scripts/eval.ts` / `src/eval/metrics.ts` (métrica *por documento*), `DECISIONES.md` (autor),
+  `AI_LOG.md` (autor). *(El empaquetado Docker pasa a F9 por decisión del autor.)*
 - **Detalle README**: cómo levantar, correr tests y eval, stack y por qué, resultado de la última
   corrida, iteración de prompt, supuestos y qué falta. `make eval`/`make results` documentados.
 - **Verificación**: `make test` + `make eval` OK; README reproduce el arranque; historial de commits
   por fase presente.
 - **Aceptación**: cualquier revisor puede levantar y evaluar siguiendo el README.
+- **Estado**: **completada** (README final, `.env.example` con precios de ejemplo, métrica *por
+  documento* en el eval, correcciones puntuales en `DECISIONES.md`/`AI_LOG.md`).
 
 ### F9 — Docker: verificación diferida
 - **Objetivo**: cerrar el requisito `docker compose up`.
 - **Prerrequisito**: Docker Desktop o colima instalado por el autor.
+- **Pendientes técnicos detectados en F8 (resolver antes de verificar)**:
+  - **`Dockerfile` runtime**: copiar `prisma/`, correr `prisma generate` y aplicar
+    `prisma migrate deploy` antes de `node dist/index.js` (hoy el contenedor no arrancaría).
+  - **`.dockerignore`**: evitar `web/node_modules`, `.git`, `dist`, `web/dist`, `.env` y `*.db`.
+  - **`docker-compose.yml`**: montar el volumen en `/app/data` y fijar
+    `DATABASE_URL=file:/app/data/pulse.db` + `NODE_ENV=production` en `environment` (hoy el volumen
+    no coincide con la BD); limpiar comentarios obsoletos.
 - **Verificación**: `docker compose up` levanta app (+ volumen SQLite), `GET /health` 200, API y UI
   accesibles, migraciones aplicadas en el arranque.
 - **Aceptación**: arranque limpio en un clon nuevo. Si no hay Docker a tiempo, dejar documentado en

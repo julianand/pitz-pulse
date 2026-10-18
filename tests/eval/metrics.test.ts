@@ -192,3 +192,16 @@ describe('barridoUmbral', () => {
     expect(fila?.autoConErrorReal).toBe(1); // solo B tiene un error real
   });
 });
+
+describe('metricasDocumento', () => {
+  it('cuenta los items con todos los campos exactos correctos', () => {
+    const reporte = evaluarClasificaciones(
+      [esperada({ id: 'MSG-01' }), esperada({ id: 'MSG-02', prioridad: 'media' })],
+      [obtenida({ id: 'MSG-01' }), obtenida({ id: 'MSG-02' })],
+    );
+
+    // MSG-01: 5/5 · MSG-02: falla prioridad (4/5) → 1 documento completo de 2
+    expect(reporte.documentos).toMatchObject({ total: 2, completos: 1 });
+    expect(reporte.documentos.accuracy).toBeCloseTo(0.5);
+  });
+});

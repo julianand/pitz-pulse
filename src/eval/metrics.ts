@@ -167,11 +167,20 @@ export interface Fallo {
   dudoso: boolean;
 }
 
+export interface MetricasDocumento {
+  total: number;
+  /** Items con **todos** los campos deterministas acertados. */
+  completos: number;
+  accuracy: number;
+}
+
 export interface ReporteEval {
   items: ItemEvaluado[];
   camposExactos: MetricasCampo[];
   camposTexto: MetricasCampo[];
   accuracyExactos: number;
+  /** Accuracy "por documento": items con **todos** los campos exactos correctos. */
+  documentos: MetricasDocumento;
   similitudResumenMedia: number;
   versiones: string[];
   /** Fallos de los campos deterministas (enums + bool). */
@@ -182,6 +191,19 @@ export interface ReporteEval {
   sinEtiqueta: string[];
   /** ids con etiqueta esperada pero sin resultado del modelo. */
   sinResultado: string[];
+}
+
+/** Item "correcto" = **todos** los campos deterministas acertados (métrica por documento). */
+export function metricasDocumento(items: readonly ItemEvaluado[]): MetricasDocumento {
+  const completos = items.filter(
+    (item) => item.totalExactos > 0 && item.aciertosExactos === item.totalExactos,
+  ).length;
+
+  return {
+    total: items.length,
+    completos,
+    accuracy: items.length === 0 ? 0 : completos / items.length,
+  };
 }
 
 /** Métricas de los campos deterministas para un subconjunto de items. */
@@ -383,6 +405,7 @@ export function evaluarClasificaciones(
     camposExactos,
     camposTexto,
     accuracyExactos,
+    documentos: metricasDocumento(items),
     similitudResumenMedia: promedio(similitudesResumen),
     versiones: [...new Set(items.map((item) => item.version_prompt))],
     fallos,
