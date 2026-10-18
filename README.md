@@ -5,6 +5,35 @@ clasifica con un modelo de lenguaje, los persiste y permite consultarlos y corre
 
 > Case técnico — Desarrollador/a Mid-level · Digital Transformation (Pitz).
 
+## Tabla de contenidos
+
+- [Estado](#estado)
+- [Stack](#stack)
+  - [Por qué Prisma 6.19.3 (no 7 ni 8)](#por-qué-prisma-6193-no-7-ni-8)
+  - [Migraciones versionadas](#migraciones-versionadas)
+  - [tsconfig de scripts/ y tests/](#tsconfig-de-scripts-y-tests)
+- [Modelo LLM (transporte, reintentos y caching)](#modelo-llm-transporte-reintentos-y-caching)
+- [Requisitos](#requisitos)
+- [Cómo levantar (desarrollo)](#cómo-levantar-desarrollo)
+  - [Lo mínimo para probar](#lo-mínimo-para-probar)
+  - [Variables del backend](#variables-del-backend)
+  - [Variables del frontend](#variables-del-frontend)
+- [Docker](#docker)
+- [API HTTP](#api-http)
+  - [Idempotencia del POST](#idempotencia-del-post)
+  - [Filtros y paginación (GET /solicitudes)](#filtros-y-paginación-get-solicitudes)
+  - [Corrección (PATCH /solicitudes/{id})](#corrección-patch-solicitudesid)
+- [Comandos](#comandos)
+  - [Smoke test de la API (smoke)](#smoke-test-de-la-api-smoke)
+  - [Probar la configuración del LLM (llm:ping)](#probar-la-configuración-del-llm-llmping)
+  - [Generar resultados (results)](#generar-resultados-results)
+  - [Evaluar (eval)](#evaluar-eval)
+  - [Resultado de la evaluación (v1 vs v2)](#resultado-de-la-evaluación-v1-vs-v2)
+- [Frontend (UI de revisión)](#frontend-ui-de-revisión)
+  - [API key del frontend (riesgo asumido)](#api-key-del-frontend-riesgo-asumido)
+- [Documentación](#documentación)
+- [Supuestos y pendientes](#supuestos-y-pendientes)
+
 ## Estado
 
 **Entrega completa (F0–F9).** Todas las fases están implementadas y verificadas, incluido
@@ -95,7 +124,7 @@ curl http://localhost:3000/health
 - **Con modelo real**: `MOCK=0` + `LLM_PROVIDER_BASE_URL`, `LLM_API_KEY` y `LLM_MODEL`.
 - `npm test` y `npm run eval` **no necesitan claves** (corren offline).
 
-### Variables del `.env` (backend)
+### Variables del backend
 
 | Variable | Default | Para qué |
 |---|---|---|
@@ -119,7 +148,7 @@ curl http://localhost:3000/health
 | `PRICE_INPUT_PER_1M` / `PRICE_OUTPUT_PER_1M` | `0.15` / `0.60` | precios (ejemplo) para estimar el costo |
 | `MOCK` | `0` | `1` = no llama a la API real del modelo |
 
-### Variables del `web/.env` (frontend)
+### Variables del frontend
 
 | Variable | Default | Para qué |
 |---|---|---|
@@ -288,7 +317,7 @@ npm run eval
 npm run eval -- --results data/resultados.v1.json --umbral 0.5
 ```
 
-### Resultado de la evaluación (v1 → v2)
+### Resultado de la evaluación (v1 vs v2)
 
 Sobre los 12 mensajes (modelo `deepseek-v4.1-flash`). Métrica sobre **campos deterministas**; la
 iteración de prompt (`src/prompts/classify.v2.ts`) atacó `requiere_info` y `area_sugerida`:
