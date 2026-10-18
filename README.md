@@ -93,8 +93,8 @@ npm test                     # tests
 npm run lint                 # lint
 npm run llm:ping -- MSG-01   # probar una config LLM (--id MSG-xx o texto libre)
 npm run smoke                # smoke test de la API (server ya levantado)
-npm run results              # genera data/resultados.json (MOCK=1 para offline)
-npm run eval                 # evalúa resultados.json vs etiquetas_esperadas.json
+npm run results              # genera data/resultados.<version>.json + data/resultados.json (MOCK=1 para offline)
+npm run eval                 # evalúa resultados vs etiquetas_esperadas (offline)
 npm run db:migrate           # migraciones Prisma (db:generate / db:deploy / db:reset)
 docker compose up            # levantar todo (ver F9)
 ```
@@ -129,13 +129,52 @@ servidor.
 - El **costo** usa `PRICE_INPUT_PER_1M` y `PRICE_OUTPUT_PER_1M` del `.env`; si están en `0`, el
   costo sale `$0` (cargá los precios reales del modelo para verlo).
 
-### Generar `resultados.json` (`results`)
+### Generar resultados (`results`)
 
-`npm run results` clasifica los 12 mensajes de `data/mensajes.json`, escribe `data/resultados.json`
-y persiste en la BD (idempotente) + `model_call_logs`.
+`npm run results` clasifica los 12 mensajes de `data/mensajes.json`, escribe
+**`data/resultados.<version>.json`** (versión del prompt activa, vía `PROMPT_VERSION`) y
+**`data/resultados.json`** (copia de la versión activa, entregable), y persiste en la BD
+(idempotente) + `model_call_logs`.
 
 - Con **`MOCK=1`**: **no** escribe en la BD y genera **`data/resultados.mock.json`** (deja
   `data/resultados.json` intacto). Útil para probar el pipeline sin API ni tocar datos.
+
+### Evaluar (`eval`)
+
+`npm run eval` compara `data/resultados.json` contra `data/etiquetas_esperadas.json` **sin llamar
+al modelo** e imprime:
+
+- **Campos deterministas** (enums + bool) por match exacto, separados en **no dudosos** (error real)
+  y **dudosos** (label ambiguo, declarado por el autor en `justificacion` como `(campo1, campo2) - …`).
+- **Campos de texto** (`resumen`, `pregunta_seguimiento`) por similitud de tokens (Jaccard) — al
+  final, **informativos** (no puntúan).
+- La lista de **fallos deterministas** y un **barrido de umbral** de `confianza`.
+
+```bash
+npm run eval
+npm run eval -- --results data/resultados.v1.json --umbral 0.5
+```
+
+### Resultado de la evaluación (v1 → v2)
+
+Sobre los 12 mensajes (modelo `deepseek-v4.1-flash`). Métrica sobre **campos deterministas**; la
+iteración de prompt (`src/prompts/classify.v2.ts`) atacó `requiere_info` y `area_sugerida`:
+
+| Métrica | v1 | v2 |
+|---|---|---|
+| Global | 78.3% | **88.3%** |
+| No dudosos (error real) | 87.5% | **97.9%** |
+| categoria | 91.7% | 91.7% |
+| prioridad | 75.0% | 83.3% |
+| area_sugerida | 66.7% | 75.0% |
+| idioma | 100% | 100% |
+| requiere_info | 58.3% | **91.7%** |
+
+- Los campos de **texto** y los **dudosos** (ambigüedad del label) no cuentan como error real.
+- En **v2** el único error real es `MSG-12 · requiere_info`; el resto de la brecha es ambigüedad
+  declarada por el autor.
+- Con **`CONFIDENCE_THRESHOLD=0.75`**, v2 revisa solo los 2 casos de menor confianza (uno es el único
+  error real) → **0 errores reales auto-aceptados**.
 
 ## Documentación
 

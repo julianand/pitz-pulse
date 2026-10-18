@@ -2,7 +2,7 @@
 
 > Contexto operativo para agentes de IA que trabajen en este repositorio.
 > **Mantener actualizado en cada fase**: la sección "Estado de fases" es la que más cambia.
-> Última actualización: F5 (completada).
+> Última actualización: F6 (completada).
 
 ## 1. Qué es este proyecto
 
@@ -94,8 +94,8 @@ npm test                     # tests (Vitest, sin API real)
 npm run lint                 # lint
 npm run llm:ping -- MSG-01   # probar una config LLM (--id MSG-xx o texto libre)
 npm run smoke                # smoke test de la API contra un server levantado
-npm run results              # genera data/resultados.json (MOCK=1 para offline)
-npm run eval                 # evalúa resultados.json vs etiquetas_esperadas.json
+npm run results              # genera data/resultados.<version>.json + data/resultados.json (MOCK=1 offline)
+npm run eval                 # evalúa resultados vs etiquetas_esperadas (offline)
 npm run db:migrate           # migraciones Prisma (db:generate/db:deploy/db:reset)
 docker compose up            # levantar todo (verificación diferida, ver PLAN.md F9)
 ```
@@ -142,7 +142,7 @@ Equivalentes cortos vía `make` (mismos scripts): `make test`, `make smoke`, `ma
 | F3 — Persistencia (Prisma) | ✅ Completa | Prisma 6.19.3 + SQLite; enums+Json; WAL; repos con Zod pre-write; 68 tests |
 | F4 — Batch + `resultados.json` | ✅ Completa | `run-batch`+`pool` (pLimit/allSettled), `mensajes.json`, `resultados.json` real (12/12), persistencia idempotente |
 | F5 — API HTTP | ✅ Completa | `POST/GET/GET{id}/PATCH /solicitudes` con auth `x-api-key`, idempotencia (200/409), filtros+paginación, `Correccion` en PATCH, logs pino; 87 tests |
-| F6 — Evaluación + calibración | ⬜ No iniciada | |
+| F6 — Evaluación + calibración | ✅ Completa | Eval offline (no dudosos vs dudosos + barrido de umbral) + registry `PROMPT_VERSION` + `resultados.<version>.json`; **v2 aplicado** (requiere_info 58→92; no dudosos 97.9%) |
 | F7 — Frontend React (mínimo) | ⬜ No iniciada | |
 | F8 — Docs y empaquetado | ⬜ No iniciada | |
 | F9 — Docker (verificación diferida) | ⬜ No iniciada | Requiere Docker instalado |
@@ -152,6 +152,21 @@ Leyenda: ⬜ No iniciada · ⏳ En curso · ✅ Completa · ⛔ Bloqueada
 
 ## 9. Hechos / decisiones vivas (append)
 
+- **F6 (completa)**: `data/etiquetas_esperadas.json` (movido desde la raíz); las `justificacion`
+  ahora empiezan con **`(campo1, campo2) - …`** declarando las **props dudosas** (label ambiguo).
+  **Registry de prompts** `src/prompts/index.ts` (`resolverPrompt(PROMPT_VERSION)`), usado por
+  `app.ts`, `ping-llm` y `generate-results` (antes `classify.v1` estaba hardcodeado). `npm run results`
+  (real) escribe **`data/resultados.<version>.json`** + `data/resultados.json` (copia de la versión
+  activa); `MOCK=1` sigue escribiendo solo `data/resultados.mock.json` sin tocar BD. **Eval offline**
+  `src/eval/metrics.ts` + `scripts/eval.ts` (`npm run eval [-- --results <f>] [--umbral <n>]`):
+  campos deterministas (enums+bool) por match exacto, separados en **no dudosos (error real)** vs
+  **dudosos (ambigüedad)**; `resumen`/`pregunta_seguimiento` por **Jaccard con stopwords** (umbral 0.5,
+  `pregunta_seguimiento` además **presencia**) y van al final como **informativo**; barrido de umbral
+  con `acc(auto)`, `acc(no dudosos)` y `auto con error real`. **v1 real** (`deepseek-v4.1-flash`):
+  global 78.3%, no dudosos 87.5% (requiere_info 58.3%). **v2 aplicado** (`classify.v2.ts` + default
+  `PROMPT_VERSION=v2`): global **88.3%**, **no dudosos 97.9%** (requiere_info **91.7%**, area sin
+  errores reales); único error real `MSG-12 · requiere_info`. Umbral **0.75** → v2 revisa 2 y deja
+  **0 errores reales auto-aceptados**. Comparación v1→v2 en `README.md`; **v3 opcional** en `PLAN.md §9`.
 - **F5**: API HTTP completa. `src/app.ts` (`createApp(deps)` con provider/`versionPrompt`/
   `buildMessages`/`prices`/`confidenceThreshold` inyectables), `src/middleware/{auth,logger,error}.ts`
   (auth `x-api-key`; logger **pino** JSON; handler central que **no** filtra PII), `src/utils/errors.ts`

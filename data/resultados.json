@@ -5,35 +5,35 @@
     "prioridad": "alta",
     "area_sugerida": "backend",
     "idioma": "es",
-    "resumen": "Vendedor no puede subir catálogo por error 500; urgente por campaña el lunes.",
-    "requiere_info": false,
-    "pregunta_seguimiento": null,
-    "confianza": 0.95,
-    "version_prompt": "v1"
+    "resumen": "Vendedor de Guadalajara no puede subir su catálogo por error 500 y tiene campaña el lunes.",
+    "requiere_info": true,
+    "pregunta_seguimiento": "¿Cuál es el email o ID del vendedor de Guadalajara y el nombre o peso del archivo Excel que intenta subir?",
+    "confianza": 0.9,
+    "version_prompt": "v2"
   },
   {
     "id": "MSG-02",
     "categoria": "datos",
-    "prioridad": "alta",
+    "prioridad": "media",
     "area_sugerida": "data",
     "idioma": "pt",
     "resumen": "Solicitan planilla de ventas de agosto por estado con total y comisión para cierre mensual.",
     "requiere_info": false,
     "pregunta_seguimiento": null,
     "confianza": 0.95,
-    "version_prompt": "v1"
+    "version_prompt": "v2"
   },
   {
     "id": "MSG-03",
     "categoria": "acceso",
     "prioridad": "media",
-    "area_sugerida": "devops",
+    "area_sugerida": "digital_transformation",
     "idioma": "es",
     "resumen": "Nueva empleada solicita acceso al panel de administración.",
     "requiere_info": true,
-    "pregunta_seguimiento": "¿Qué rol o permisos específicos necesitás en el panel de administración y a qué áreas o funcionalidades?",
+    "pregunta_seguimiento": "¿Podrías indicarnos tu correo corporativo y qué rol o permisos exactos necesitás en el panel de administración?",
     "confianza": 0.95,
-    "version_prompt": "v1"
+    "version_prompt": "v2"
   },
   {
     "id": "MSG-04",
@@ -41,23 +41,23 @@
     "prioridad": "media",
     "area_sugerida": "digital_transformation",
     "idioma": "pt",
-    "resumen": "Automatizar copia manual diaria de pedidos nuevos a planilla y envío por email a distribuidores",
+    "resumen": "Solicitan automatizar la copia manual diaria de pedidos nuevos a una planilla y su envío por e-mail.",
     "requiere_info": false,
     "pregunta_seguimiento": null,
-    "confianza": 0.95,
-    "version_prompt": "v1"
+    "confianza": 0.82,
+    "version_prompt": "v2"
   },
   {
     "id": "MSG-05",
     "categoria": "bug",
     "prioridad": "media",
-    "area_sugerida": "data",
+    "area_sugerida": "digital_transformation",
     "idioma": "es",
-    "resumen": "No aparecen registros de la última campaña en HubSpot, posible problema de integración.",
+    "resumen": "No aparecen registros de la última campaña en HubSpot; se desconoce el origen del fallo.",
     "requiere_info": true,
-    "pregunta_seguimiento": "¿Podrías indicar el nombre o ID de la campaña y el rango de fechas de los registros faltantes en HubSpot?",
-    "confianza": 0.7,
-    "version_prompt": "v1"
+    "pregunta_seguimiento": "¿Podés indicarnos el nombre o ID de la campaña y un ejemplo concreto de un registro que no aparece, con captura de pantalla si es posible?",
+    "confianza": 0.8,
+    "version_prompt": "v2"
   },
   {
     "id": "MSG-06",
@@ -65,23 +65,23 @@
     "prioridad": "alta",
     "area_sugerida": "frontend",
     "idioma": "pt",
-    "resumen": "Botón de finalizar compra desaparece en móvil al aplicar cupón.",
+    "resumen": "Botón de finalizar compra desaparece al aplicar cupón en celular, no en computadora.",
     "requiere_info": true,
-    "pregunta_seguimiento": "¿Puedes indicar el modelo de celular, navegador y si el problema ocurre con todos los cupones o solo con uno específico?",
-    "confianza": 0.95,
-    "version_prompt": "v1"
+    "pregunta_seguimiento": "¿Podrías indicarnos el modelo de celular, el sistema operativo (Android/iOS) y el navegador que usó el mecánico, junto con el cupón aplicado?",
+    "confianza": 0.9,
+    "version_prompt": "v2"
   },
   {
     "id": "MSG-07",
     "categoria": "datos",
-    "prioridad": "baja",
+    "prioridad": "media",
     "area_sugerida": "data",
     "idioma": "es",
-    "resumen": "Solicitan cantidad de talleres activos en Monterrey para reunión con distribuidor.",
+    "resumen": "Solicitan conteo de talleres activos en Monterrey para reunión con distribuidor.",
     "requiere_info": false,
     "pregunta_seguimiento": null,
-    "confianza": 0.95,
-    "version_prompt": "v1"
+    "confianza": 0.92,
+    "version_prompt": "v2"
   },
   {
     "id": "MSG-08",
@@ -89,23 +89,23 @@
     "prioridad": "alta",
     "area_sugerida": "backend",
     "idioma": "pt",
-    "resumen": "Notas fiscais salen con CNPJ incorrecto del vendedor y hay reclamos de clientes.",
-    "requiere_info": false,
-    "pregunta_seguimiento": null,
-    "confianza": 0.95,
-    "version_prompt": "v1"
+    "resumen": "Notas fiscais emitidas con CNPJ incorrecto del vendedor generan reclamos de clientes.",
+    "requiere_info": true,
+    "pregunta_seguimiento": "¿Podrías compartir el número de las notas fiscales afectadas y los CNPJ (correcto e incorrecto) para localizar el caso?",
+    "confianza": 0.9,
+    "version_prompt": "v2"
   },
   {
     "id": "MSG-09",
     "categoria": "bug",
-    "prioridad": "media",
-    "area_sugerida": "backend",
+    "prioridad": "alta",
+    "area_sugerida": "devops",
     "idioma": "es",
-    "resumen": "Reportan que la plataforma está lenta, sin detalles de alcance ni módulos afectados.",
+    "resumen": "Reportan que la plataforma está lenta, posible problema de rendimiento.",
     "requiere_info": true,
-    "pregunta_seguimiento": "¿Qué módulos o pantallas están lentos, desde cuándo ocurre y afecta a todos los usuarios o solo a algunos?",
-    "confianza": 0.6,
-    "version_prompt": "v1"
+    "pregunta_seguimiento": "¿Podrías indicar en qué pantalla o módulo notas la lentitud y a qué hora aproximada ocurrió?",
+    "confianza": 0.55,
+    "version_prompt": "v2"
   },
   {
     "id": "MSG-10",
@@ -113,11 +113,11 @@
     "prioridad": "baja",
     "area_sugerida": "digital_transformation",
     "idioma": "es",
-    "resumen": "Piden automatizar saludos de aniversario laboral para empleados de Pitz.",
-    "requiere_info": true,
-    "pregunta_seguimiento": "¿Qué canal y formato preferís para el mensaje (WhatsApp, Slack, email) y con cuánta anticipación?",
-    "confianza": 0.7,
-    "version_prompt": "v1"
+    "resumen": "Automatizar mensajes de aniversario laboral para empleados de Pitz.",
+    "requiere_info": false,
+    "pregunta_seguimiento": null,
+    "confianza": 0.95,
+    "version_prompt": "v2"
   },
   {
     "id": "MSG-11",
@@ -125,22 +125,22 @@
     "prioridad": "baja",
     "area_sugerida": "producto",
     "idioma": "pt",
-    "resumen": "Vendedor pregunta la diferencia entre plan básico y pro para vendedores.",
+    "resumen": "Comercial pregunta diferencia entre plan básico y pro para vendedores.",
     "requiere_info": false,
     "pregunta_seguimiento": null,
     "confianza": 0.95,
-    "version_prompt": "v1"
+    "version_prompt": "v2"
   },
   {
     "id": "MSG-12",
     "categoria": "consulta",
     "prioridad": "alta",
-    "area_sugerida": "producto",
+    "area_sugerida": "digital_transformation",
     "idioma": "es",
-    "resumen": "Distribuidor pagó duplicado y pide reembolso; tercer caso este mes.",
-    "requiere_info": true,
-    "pregunta_seguimiento": "¿Cuál es el ID del pedido y el monto del pago duplicado?",
-    "confianza": 0.85,
-    "version_prompt": "v1"
+    "resumen": "Distribuidor pagó dos veces; consultan cómo procesar reembolso, ya van tres casos.",
+    "requiere_info": false,
+    "pregunta_seguimiento": null,
+    "confianza": 0.7,
+    "version_prompt": "v2"
   }
 ]

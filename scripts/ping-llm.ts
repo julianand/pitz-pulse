@@ -5,7 +5,7 @@ import { classifySolicitud } from '../src/agents/classifier/index.js';
 import { env, isMockMode } from '../src/config/env.js';
 import { estimateCost, formatCost } from '../src/config/prices.js';
 import { crearProvider } from '../src/llm/factory.js';
-import { buildMessages, VERSION } from '../src/prompts/classify.v1.js';
+import { resolverPrompt } from '../src/prompts/index.js';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const MENSAJES_PATH = resolve(HERE, '../data/mensajes.json');
@@ -89,17 +89,18 @@ function resolverEntrada(): MensajeFixture {
 async function main(): Promise<void> {
   const entrada = resolverEntrada();
   const provider = crearProvider();
+  const prompt = resolverPrompt(env.PROMPT_VERSION);
 
   if (isMockMode) {
     console.log('› modo MOCK (no se llama a la API real)');
   }
 
-  console.log(`› modelo=${provider.model} prompt=${VERSION} id=${entrada.id}`);
+  console.log(`› modelo=${provider.model} prompt=${prompt.VERSION} id=${entrada.id}`);
 
   const result = await classifySolicitud(entrada, {
     provider,
-    versionPrompt: VERSION,
-    buildMessages,
+    versionPrompt: prompt.VERSION,
+    buildMessages: prompt.buildMessages,
   });
 
   const costo = estimateCost(result.usage, {

@@ -6,7 +6,7 @@ import { crearProvider } from './llm/factory.js';
 import type { LlmMessage, LlmProvider } from './llm/types.js';
 import { errorHandler, notFoundHandler } from './middleware/error.js';
 import { requestLogger } from './middleware/logger.js';
-import { buildMessages } from './prompts/classify.v1.js';
+import { resolverPrompt } from './prompts/index.js';
 import { healthRouter } from './routes/health.js';
 import { crearApiRouter } from './routes/index.js';
 
@@ -26,6 +26,9 @@ export interface AppDeps {
 export function createApp(deps: AppDeps = {}): Express {
   const app = express();
 
+  const versionPrompt = deps.versionPrompt ?? env.PROMPT_VERSION;
+  const prompt = resolverPrompt(versionPrompt);
+
   const prices = deps.prices ?? {
     inputPer1M: env.PRICE_INPUT_PER_1M,
     outputPer1M: env.PRICE_OUTPUT_PER_1M,
@@ -39,8 +42,8 @@ export function createApp(deps: AppDeps = {}): Express {
   app.use(
     crearApiRouter({
       provider: deps.provider ?? crearProvider(),
-      versionPrompt: deps.versionPrompt ?? env.PROMPT_VERSION,
-      buildMessages: deps.buildMessages ?? buildMessages,
+      versionPrompt,
+      buildMessages: deps.buildMessages ?? prompt.buildMessages,
       prices,
       confidenceThreshold: deps.confidenceThreshold ?? env.CONFIDENCE_THRESHOLD,
     }),

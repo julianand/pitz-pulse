@@ -215,15 +215,21 @@ el historial real de commits es requisito del PDF).
   escenarios contra un server levantado.
 - **Aceptación**: suite de API verde sin tocar la API real.
 
-### F6 — Evaluación (`make eval`) + calibración de `confianza`
-- **Objetivo**: métrica por campo, fallos, e iteración de prompt.
+### F6 — Evaluación (`npm run eval`) + calibración de `confianza`
+- **Objetivo**: métrica por campo, fallos, calibración del umbral e **iteración de prompt (v2)**.
 - **Archivos**: `scripts/eval.ts`, `src/eval/metrics.ts`, `tests/eval/metrics.test.ts`,
-  `Makefile: eval`, `src/prompts/classify.v2.ts` (iteración), `data/resultados.json` (v2).
-- **Detalle**: accuracy por campo (8 comunes), lista de `id` con fallo y campo fallado; barrido
-  umbral-confianza vs accuracy para justificar el corte; comparativa v1 vs v2.
-- **Verificación**: `make eval` imprime accuracy por campo + fallos + tabla de umbral; comparativa v1
-  vs v2 con números guardables en README.
-- **Aceptación**: eval reproducible offline; al menos una iteración documentada (mejora o empeora).
+  `src/prompts/index.ts` (registry por `PROMPT_VERSION`), `data/etiquetas_esperadas.json` (labels),
+  `data/resultados.<version>.json` y `data/resultados.json`.
+- **Detalle**: accuracy por campo de los **deterministas** (enums+bool) por match exacto, separando
+  **no dudosos (error real)** de **dudosos** (props declaradas en `justificacion` como
+  `(campo1, campo2) - …`); `resumen` y `pregunta_seguimiento` por similitud de tokens (Jaccard,
+  umbral 0.5) + **presencia** (informativo); lista de `id`/campo fallados; barrido umbral-confianza
+  con `acc(auto)`, `acc(no dudosos)` y `auto con error real`; **comparativa v1 vs v2**.
+- **Verificación**: `npm run eval` imprime accuracy por campo + fallos + tabla de umbral; comparativa
+  v1 vs v2 con números guardables en README.
+- **Aceptación**: eval reproducible offline; **una iteración `v1`→`v2` documentada** (mejora o empeora).
+- **Estado**: eval + registry + resultados por versión **listos**; **v2 aplicado** (mejora
+  documentada en `README.md`). **Aceptación cumplida.**
 
 ### F7 — Frontend React (extra, mínimo)
 - **Objetivo**: revisar y corregir clasificaciones.
@@ -388,7 +394,9 @@ el historial real de commits es requisito del PDF).
 ## 9. Pendientes / a confirmar durante la ejecución
 
 - Ajustes finos del plan se harán con los primeros resultados del agente (acordado con el autor).
-- Umbral de confianza final tras F6.
+- Umbral de confianza final tras F6 → **0.75** (v2 lo vuelve útil: revisa los 2 de menor confianza).
+- **v3 (opcional, no prioritario)**: refinar `requiere_info` para reclamos/incidentes concretos de un
+  cliente (caso `MSG-12`, cobro duplicado) — el único error real que queda en v2.
 - Shape de paginación: **definido** en F5 → `{ items, itemCount, currentPage, totalPages, limit }`.
 - Si opencode-go soporta `reasoning_effort` / structured outputs estrictos.
 - Estado de Docker al llegar F9.

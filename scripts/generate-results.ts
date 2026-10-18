@@ -1,7 +1,6 @@
 import { readFileSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { buildMessages, VERSION } from '../src/prompts/classify.v1.js';
 import { runBatch, type BatchItem, type BatchOk } from '../src/agents/classifier/run-batch.js';
 import { env, isMockMode } from '../src/config/env.js';
 import { formatCost } from '../src/config/prices.js';
@@ -9,6 +8,7 @@ import { aplicarPragmasSqlite, desconectar } from '../src/db/client.js';
 import { registrarCallLog } from '../src/db/model-call-log.repo.js';
 import { crearSolicitud, existeSolicitud } from '../src/db/solicitud.repo.js';
 import { crearProvider } from '../src/llm/factory.js';
+import { resolverPrompt } from '../src/prompts/index.js';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const MENSAJES_PATH = resolve(HERE, '../data/mensajes.json');
@@ -22,7 +22,12 @@ function leerMensajes(): BatchItem[] {
   return data;
 }
 
-async function persistir(resultados: Awaited<ReturnType<typeof runBatch>>, items: BatchItem[], modelo: string): Promise<void> {
+async function persistir(
+  resultados: Awaited<ReturnType<typeof runBatch>>,
+  items: BatchItem[],
+  modelo: string,
+  versionPrompt: string,
+): Promise<void> {
   const rawPorId = new Map(items.map((item) => [item.id, item.mensaje]));
 
   for (const resultado of resultados) {
@@ -43,7 +48,7 @@ async function persistir(resultados: Awaited<ReturnType<typeof runBatch>>, items
       await registrarCallLog({
         solicitud_id: resultado.id,
         modelo,
-        version_prompt: VERSION,
+        version_prompt: versionPrompt,
         prompt_tokens: resultado.usage.promptTokens,
         completion_tokens: resultado.usage.completionTokens,
         total_tokens: resultado.usage.totalTokens,
@@ -58,7 +63,7 @@ async function persistir(resultados: Awaited<ReturnType<typeof runBatch>>, items
       await registrarCallLog({
         solicitud_id: null,
         modelo,
-        version_prompt: VERSION,
+        version_prompt: versionPrompt,
         prompt_tokens: 0,
         completion_tokens: 0,
         total_tokens: 0,
@@ -82,13 +87,16 @@ function escribirResultados(oks: BatchOk[], path: string): void {
 async function main(): Promise<void> {
   const items = leerMensajes();
   const provider = crearProvider();
+  const prompt = resolverPrompt(env.PROMPT_VERSION);
   const esMock = isMockMode;
+
+  const versionPath = resolve(HERE, `../data/resultados.${prompt.VERSION}.json`);
 
   if (esMock) {
     console.log('› modo MOCK (no se llama a la API real ni se escribe en la BD)');
   }
   console.log(
-    `› clasificando ${items.length} mensajes · modelo=${provider.model} prompt=${VERSION} ` +
+    `› clasificando ${items.length} mensajes · modelo=${provider.model} prompt=${prompt.VERSION} ` +
       `concurrencia=${env.CONCURRENCY_LIMIT}`,
   );
 
@@ -99,8 +107,8 @@ async function main(): Promise<void> {
   const inicio = Date.now();
   const resultados = await runBatch(items, {
     provider,
-    versionPrompt: VERSION,
-    buildMessages,
+    versionPrompt: prompt.VERSION,
+    buildMessages: prompt.buildMessages,
     concurrency: env.CONCURRENCY_LIMIT,
     prices: PRICES,
   });
@@ -109,16 +117,20 @@ async function main(): Promise<void> {
   const oks = resultados.filter((r): r is BatchOk => r.ok);
   const errores = resultados.filter((r) => !r.ok);
 
-  const salida = esMock ? RESULTADOS_MOCK_PATH : RESULTADOS_PATH;
-  escribirResultados(oks, salida);
-
-  if (!esMock) {
-    await persistir(resultados, items, provider.model);
+  if (esMock) {
+    // En MOCK no se toca la BD ni el entregable: solo `resultados.mock.json`.
+    escribirResultados(oks, RESULTADOS_MOCK_PATH);
+  } else {
+    // Escribe la salida por versión y el entregable canónico (`resultados.json` = versión activa).
+    escribirResultados(oks, versionPath);
+    escribirResultados(oks, RESULTADOS_PATH);
+    await persistir(resultados, items, provider.model, prompt.VERSION);
   }
 
   const tokens = oks.reduce((acc, r) => acc + r.usage.totalTokens, 0);
   const costo = oks.reduce((acc, r) => acc + r.costoEstimado, 0);
-  const latenciaProm = oks.length > 0 ? Math.round(oks.reduce((acc, r) => acc + r.latencyMs, 0) / oks.length) : 0;
+  const latenciaProm =
+    oks.length > 0 ? Math.round(oks.reduce((acc, r) => acc + r.latencyMs, 0) / oks.length) : 0;
 
   console.log(`\n✓ ${oks.length}/${items.length} clasificados · ${errores.length} fallo(s)`);
   if (errores.length > 0) {
@@ -127,7 +139,12 @@ async function main(): Promise<void> {
   console.log(
     `  tokens=${tokens} costo≈${formatCost(costo)} latencia_prom=${latenciaProm}ms duracion_total=${duracion}ms`,
   );
-  console.log(`  → ${salida}${esMock ? ' (MOCK: sin escritura en BD)' : ''}`);
+  if (esMock) {
+    console.log(`  → ${RESULTADOS_MOCK_PATH} (MOCK: sin escritura en BD)`);
+  } else {
+    console.log(`  → ${versionPath}`);
+    console.log(`  → ${RESULTADOS_PATH} (copia de la versión activa)`);
+  }
 }
 
 main()

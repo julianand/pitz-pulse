@@ -36,7 +36,7 @@ const EnvSchema = z.object({
   /** Identificador de sesión para el proveedor (opencode-go: header `x-opencode-session`). */
   LLM_SESSION_ID: z.string().default('pitz-pulse'),
 
-  PROMPT_VERSION: z.string().default('v1'),
+  PROMPT_VERSION: z.string().default('v2'),
   CONFIDENCE_THRESHOLD: z.coerce.number().min(0).max(1).default(0.75),
 
   CONCURRENCY_LIMIT: z.coerce.number().int().positive().default(4),

@@ -1,0 +1,12 @@
+{
+  // Config SOLO para el editor y para chequear tipos de `scripts/`.
+  // No interviene en el build: `npm run build` usa el tsconfig.json raíz
+  // (rootDir "src" → dist/index.js), por eso `scripts/` está fuera de ese proyecto.
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "rootDir": ".."
+  },
+  "include": ["./**/*.ts"],
+  "exclude": ["../node_modules", "../dist"]
+}

@@ -36,13 +36,21 @@ function headerOf(init: RequestInit | undefined, name: string): string | null {
   return new Headers(init?.headers).get(name);
 }
 
+/**
+ * `fetch` simulado con los params declarados. Sin declararlos, `mock.calls[i]` es `[]`,
+ * así que `[1]` no existe para TypeScript (`TS2493`) y su valor se ve como `undefined`.
+ */
+function fetchMockOk() {
+  return vi.fn(async (_url: unknown, _init?: RequestInit) => completionResponse());
+}
+
 afterEach(() => {
   vi.unstubAllGlobals();
 });
 
 describe('createOpenAiProvider', () => {
   it('envía el sessionId del request en el header x-opencode-session', async () => {
-    const fetchMock = vi.fn(async () => completionResponse());
+    const fetchMock = fetchMockOk();
     vi.stubGlobal('fetch', fetchMock);
 
     const result = await provider().complete({
@@ -59,7 +67,7 @@ describe('createOpenAiProvider', () => {
   });
 
   it('cae al sessionId por defecto cuando el request no trae uno', async () => {
-    const fetchMock = vi.fn(async () => completionResponse());
+    const fetchMock = fetchMockOk();
     vi.stubGlobal('fetch', fetchMock);
 
     await provider().complete({ messages: [{ role: 'user', content: 'hola' }] });
@@ -69,7 +77,7 @@ describe('createOpenAiProvider', () => {
   });
 
   it('envía json_object y temperature 0, sin reasoning_effort si está "off"', async () => {
-    const fetchMock = vi.fn(async () => completionResponse());
+    const fetchMock = fetchMockOk();
     vi.stubGlobal('fetch', fetchMock);
 
     await provider().complete({ messages: [{ role: 'user', content: 'hola' }] });
@@ -82,7 +90,7 @@ describe('createOpenAiProvider', () => {
   });
 
   it('envía reasoning_effort="none" (así se desactiva el razonamiento)', async () => {
-    const fetchMock = vi.fn(async () => completionResponse());
+    const fetchMock = fetchMockOk();
     vi.stubGlobal('fetch', fetchMock);
 
     await provider('none').complete({ messages: [{ role: 'user', content: 'hola' }] });
@@ -93,7 +101,7 @@ describe('createOpenAiProvider', () => {
   });
 
   it('envía reasoning_effort cuando es un valor válido (p. ej. "high")', async () => {
-    const fetchMock = vi.fn(async () => completionResponse());
+    const fetchMock = fetchMockOk();
     vi.stubGlobal('fetch', fetchMock);
 
     await provider('high').complete({ messages: [{ role: 'user', content: 'hola' }] });
