@@ -1,0 +1,116 @@
+@import 'tailwindcss';
+
+@theme {
+  --font-sans: 'Instrument Sans', 'SF Pro Display', 'Helvetica Neue', system-ui, sans-serif;
+  --font-serif: 'Newsreader', 'Lyon Text', 'Instrument Serif', Georgia, serif;
+  --font-mono: 'JetBrains Mono', 'SF Mono', ui-monospace, monospace;
+
+  --color-canvas: #f7f6f3;
+  --color-surface: #ffffff;
+  --color-surface-2: #fbfbfa;
+  --color-ink: #111111;
+  --color-ink-2: #2f3437;
+  --color-muted: #787774;
+  --color-line: #eaeaea;
+  --color-line-soft: rgba(0, 0, 0, 0.06);
+
+  /* Marca (topbar): igual en claro y oscuro. */
+  --color-brand: #fd3333;
+  --color-brand-fg: #ffffff;
+  --color-brand-hover: #d92b2b;
+
+  --color-tone-red: #9f2f2d;
+  --color-tone-red-bg: #fdebec;
+  --color-tone-blue: #1f6c9f;
+  --color-tone-blue-bg: #e1f3fe;
+  --color-tone-green: #346538;
+  --color-tone-green-bg: #edf3ec;
+  --color-tone-yellow: #956400;
+  --color-tone-yellow-bg: #fbf3db;
+  --color-tone-neutral: #5b5b57;
+  --color-tone-neutral-bg: #f0efec;
+}
+
+@layer base {
+  html {
+    color-scheme: light dark;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  body {
+    @apply bg-canvas text-ink font-sans antialiased;
+    line-height: 1.6;
+  }
+
+  ::selection {
+    background: var(--color-ink);
+    color: var(--color-surface);
+  }
+
+  input,
+  select,
+  textarea,
+  button {
+    font: inherit;
+    color: inherit;
+  }
+}
+
+/* Profundidad de fondo: dos luces radiales cálidas, muy tenues (no es un gradiente decorativo). */
+@utility ambient-bg {
+  background-image:
+    radial-gradient(55rem 38rem at 88% -12%, rgba(159, 47, 45, 0.045), transparent 62%),
+    radial-gradient(48rem 34rem at 4% 108%, rgba(31, 108, 159, 0.045), transparent 58%);
+}
+
+/*
+ * Tema oscuro según la preferencia del navegador. Se redefinen los tokens (fuera de
+ * capa, así ganan a `@layer theme`) y todas las utilidades —que referencian
+ * `var(--color-*)`— se invierten sin tocar los componentes. La marca no cambia.
+ */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-canvas: #121110;
+    --color-surface: #1a1917;
+    --color-surface-2: #201f1c;
+    --color-ink: #ece9e3;
+    --color-ink-2: #d3cfc7;
+    --color-muted: #a5a19a;
+    --color-line: #2a2825;
+    --color-line-soft: rgba(255, 255, 255, 0.08);
+
+    --color-tone-red: #f0a9a6;
+    --color-tone-red-bg: rgba(159, 47, 45, 0.22);
+    --color-tone-blue: #9fc9e8;
+    --color-tone-blue-bg: rgba(31, 108, 159, 0.24);
+    --color-tone-green: #a7cfa9;
+    --color-tone-green-bg: rgba(52, 101, 56, 0.26);
+    --color-tone-yellow: #e3c078;
+    --color-tone-yellow-bg: rgba(149, 100, 0, 0.24);
+    --color-tone-neutral: #b6b2ab;
+    --color-tone-neutral-bg: rgba(255, 255, 255, 0.07);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .reveal {
+    opacity: 0;
+    transform: translateY(12px);
+    transition:
+      opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1),
+      transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .reveal.is-in {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal {
+    opacity: 1;
+    transform: none;
+  }
+}

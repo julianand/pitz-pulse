@@ -74,7 +74,13 @@ export function crearSolicitudesRouter(deps: SolicitudServiceDeps): Router {
 
     res.json({
       ok: true,
-      data: { ...serializarSolicitud(resultado.solicitud), correcciones: resultado.correcciones },
+      data: {
+        ...serializarSolicitud(resultado.solicitud),
+        // El detalle sí expone el texto **enmascarado** (sin PII) para la revisión humana.
+        // `contenido_raw` nunca sale de la API.
+        contenido_mascarado: resultado.solicitud.contenido_mascarado,
+        correcciones: resultado.correcciones,
+      },
     });
   });
 

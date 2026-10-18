@@ -233,14 +233,17 @@ el historial real de commits es requisito del PDF).
 
 ### F7 — Frontend React (extra, mínimo)
 - **Objetivo**: revisar y corregir clasificaciones.
-- **Deps** (aquí recién): vite, react, react-dom, (cliente HTTP).
+- **Deps** (aquí recién): `react` 19, `react-dom`, `react-router-dom`, `vite`, `@vitejs/plugin-react`,
+  `tailwindcss` v4 + `@tailwindcss/vite`. En la raíz, `concurrently`.
 - **Archivos**: `web/**`, build → `web/dist`, multi-stage en `Dockerfile`, `src/app.ts` (static),
-  `.env.example` (Vite demo key).
-- **Detalle**: lista con filtros/paginación; detalle; formulario de edición → PATCH; badge
-  `requiere_revision` por baja `confianza`; historial de `Correccion`.
+  `.env.example` (`WEB_DIST`, demo key), `web/.env.example` (`VITE_API_KEY`).
+- **Detalle**: lista con filtros/paginación; detalle con **mensaje enmascarado**, **diff** vs
+  `clasificacion_original` e **historial de `Correccion`**; formulario de edición → PATCH; alta → POST;
+  badge `requiere_revision` por baja `confianza`. Estilo según skill `minimalist-ui`.
 - **Verificación**: UI lista/filtra/edita; un PATCH desde UI inserta `Correccion` y refleja la
-  vigente.
+  vigente; Express sirve `web/dist` y el 404 JSON de la API sigue igual.
 - **Aceptación**: flujo de corrección humana funcional end-to-end.
+- **Estado**: **completada** (sin tests de frontend, no lo pide el case).
 
 ### F8 — Empaquetado, documentación y hardening
 - **Objetivo**: entrega completa y reproducible.

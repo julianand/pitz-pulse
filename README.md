@@ -16,7 +16,7 @@ para el contexto operativo.
 - **LLM**: OpenAI SDK contra endpoint OpenAI-compatible (Zod para validar la salida).
 - **BD**: SQLite + Prisma.
 - **Tests**: Vitest + supertest (sin llamar a la API real del modelo).
-- **Frontend**: React (Vite) — fase final; build servido estático por Express.
+- **Frontend**: React + Vite + Tailwind v4 (`web/`); build servido estático por Express (mismo origen, sin CORS).
 
 ## Requisitos
 
@@ -28,9 +28,13 @@ para el contexto operativo.
 ```bash
 cp .env.example .env    # completar variables
 npm install
-npm run dev             # http://localhost:3000
+npm run web:install     # deps del frontend (una vez)
+npm run dev             # backend (3000) + frontend (5173) juntos
 curl http://localhost:3000/health
 ```
+
+`npm run dev` usa `concurrently` y levanta los dos procesos; también se pueden correr por separado:
+`npm run dev:server` (Express en `:3000`) y `npm run dev:web` (Vite en `:5173`, con **proxy** a la API).
 
 ## API HTTP
 
@@ -44,10 +48,12 @@ es público. Todas las respuestas usan un envelope:
 |---|---|---|
 | `POST` | `/solicitudes` | Crea y clasifica. Body `{ id, mensaje }`. |
 | `GET` | `/solicitudes` | Lista con filtros y paginación. |
-| `GET` | `/solicitudes/{id}` | Detalle + historial de correcciones. |
+| `GET` | `/solicitudes/{id}` | Detalle + `contenido_mascarado` + historial de correcciones. |
 | `PATCH` | `/solicitudes/{id}` | Corrige la clasificación vigente. |
 
-El `contenido_raw` (mensaje original) **nunca** se expone en las respuestas.
+El `contenido_raw` (mensaje original) **nunca** se expone en las respuestas. El **detalle** sí devuelve
+`contenido_mascarado` (texto sin PII) para la revisión humana; la **lista** no lo incluye. Los logs
+tampoco contienen el mensaje.
 
 ### Idempotencia del `POST`
 
@@ -87,8 +93,12 @@ curl -H "x-api-key: $API_KEY" -H "content-type: application/json" \
 > Los **scripts de `package.json` son la fuente de la verdad**; el `Makefile` solo delega en ellos.
 
 ```bash
-npm run dev                  # servidor en desarrollo
-npm run build                # prisma generate + tsc → dist/
+npm run dev                  # backend + frontend (concurrently)
+npm run dev:server           # solo backend (tsx watch, :3000)
+npm run dev:web              # solo frontend (vite, :5173)
+npm run build                # backend + frontend (concurrently)
+npm run build:server         # prisma generate + tsc → dist/
+npm run build:web            # vite build → web/dist/
 npm test                     # tests
 npm run lint                 # lint
 npm run llm:ping -- MSG-01   # probar una config LLM (--id MSG-xx o texto libre)
@@ -99,8 +109,12 @@ npm run db:migrate           # migraciones Prisma (db:generate / db:deploy / db:
 docker compose up            # levantar todo (ver F9)
 ```
 
-Equivalentes vía `make` (mismos scripts): `make dev`, `make build`, `make test`, `make lint`,
+Equivalentes vía `make` (mismos scripts): `make dev`, `make dev-server`, `make dev-web`,
+`make web-install`, `make build`, `make build-server`, `make build-web`, `make test`, `make lint`,
 `make llm-ping ARGS="MSG-01"`, `make results`, `make eval`.
+
+> El frontend tiene su propio `package.json` en `web/`. Instalá sus deps con `npm run web:install`
+> (una vez) o `npm --prefix web install`.
 
 ### Smoke test de la API (`smoke`)
 
@@ -175,6 +189,42 @@ iteración de prompt (`src/prompts/classify.v2.ts`) atacó `requiere_info` y `ar
   declarada por el autor.
 - Con **`CONFIDENCE_THRESHOLD=0.75`**, v2 revisa solo los 2 casos de menor confianza (uno es el único
   error real) → **0 errores reales auto-aceptados**.
+
+## Frontend (UI de revisión)
+
+UI mínima (extra) para **probar la API y corregir clasificaciones** desde el navegador. Vive en `web/`
+(React 19 + Vite + Tailwind v4) y el backend sirve su build (`web/dist`) en **el mismo origen**, así
+que no hay CORS.
+
+- **Lista**: filtros (`categoria`, `prioridad`, `area`, `idioma`, `requiere_revision`), paginación,
+  badge `requiere_revision` y semáforo de `confianza`. **Topbar fijo** (`#fd3333`) y **barra de filtros
+  fija** al hacer scroll.
+- **Detalle**: mensaje **enmascarado**, clasificación **vigente** con **diff** contra
+  `clasificacion_original`, e **historial de `Correccion`** agrupado por `patch_id`.
+- **Corregir**: `PATCH` enviando **solo los campos cambiados** + `autor` (valida `resumen` ≤ 20
+  palabras y la coherencia `requiere_info ↔ pregunta_seguimiento`).
+- **Nueva**: `POST /solicitudes` (`mensaje`; el `id` es **opcional** → si se deja vacío, la UI genera
+  `MSG-<timestamp>`).
+- **Tema**: claro/oscuro según `prefers-color-scheme` del navegador (sin toggle).
+- **Rutas de la UI**: `/`, `/nueva` y **`/solicitud/:id`** (singular, para no colisionar con el
+  endpoint `/solicitudes` de la API al recargar o entrar por link directo).
+
+### API key del frontend (riesgo asumido)
+
+La UI necesita `x-api-key`. Para este case se deja **quemada en el bundle** vía `VITE_API_KEY`
+(ver `web/.env.example`): **cualquiera que abra la UI puede leerla**. Si cambia `API_KEY` en el
+backend, hay que cambiarla también en `web/.env` (o en el fallback de `web/src/api/client.ts`) y
+recompilar. La alternativa más segura sería un proxy same-origin que inyecte la key server-side.
+
+```bash
+# Desarrollo (HMR): Vite en :5173 con proxy a la API.
+npm run web:install
+npm run dev            # o: npm run dev:server  +  npm run dev:web
+
+# Producción local: Express sirve la UI compilada en http://localhost:3000
+npm run build          # backend + frontend
+npm start
+```
 
 ## Documentación
 

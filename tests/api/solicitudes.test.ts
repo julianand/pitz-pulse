@@ -185,6 +185,9 @@ describe('GET /solicitudes/:id', () => {
     const ok = await request(app).get('/solicitudes/MSG-01').set(AUTH);
     expect(ok.status).toBe(200);
     expect(ok.body.data).toMatchObject({ id: 'MSG-01', correcciones: [] });
+    // El detalle expone el texto enmascarado (revisión humana), pero nunca `contenido_raw`.
+    expect(ok.body.data.contenido_mascarado).toBe('contenido');
+    expect(ok.body.data).not.toHaveProperty('contenido_raw');
 
     const missing = await request(app).get('/solicitudes/MSG-99').set(AUTH);
     expect(missing.status).toBe(404);

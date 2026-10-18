@@ -2,7 +2,7 @@
 
 > Contexto operativo para agentes de IA que trabajen en este repositorio.
 > **Mantener actualizado en cada fase**: la sección "Estado de fases" es la que más cambia.
-> Última actualización: F6 (completada).
+> Última actualización: F7 (completada).
 
 ## 1. Qué es este proyecto
 
@@ -25,7 +25,8 @@ Fuentes de requisitos, en orden de precedencia:
 - **Validación**: **Zod** (+ reparación/reintento si el JSON no valida).
 - **Concurrencia**: `pLimit` (límite por env) + `Promise.allSettled`.
 - **BD**: SQLite + **Prisma** (migraciones versionadas en repo).
-- **Frontend**: React (Vite) — extra, al final y mínimo; build servido estático por Express.
+- **Frontend**: React 19 + Vite + Tailwind v4 (`web/`, extra y mínimo); build servido estático por
+  Express (mismo origen, sin CORS).
 - **Tests**: **Vitest** + supertest. **Nunca** llaman a la API real del modelo (modo mock).
 - **Empaquetado**: `Dockerfile` + `docker-compose.yml`.
 
@@ -44,7 +45,8 @@ Fuentes de requisitos, en orden de precedencia:
   Se calibra en la fase de evaluación. Debe tener uso real.
 - **Enmascaramiento (obligatorio)**: CPF/CNPJ (BR), RFC (MX), emails y teléfonos (+52/+55).
   Aplica al **input del modelo, a los logs y a los errores**.
-- **`contenido_raw`**: solo en BD; **nunca** en logs ni en respuestas de la API.
+- **`contenido_raw`**: solo en BD; **nunca** en logs ni en respuestas de la API (el **detalle** sí
+  devuelve `contenido_mascarado`, sin PII, para la revisión humana; la lista no).
 - **Prompt versionado**: un archivo por versión en `src/prompts/`; activa por env; `resultados.json`
   registra la usada. (Vive dentro de `src/` para respetar el `rootDir` del build.)
 - **Eval offline**: compara `resultados.json` vs `etiquetas_esperadas.json` **sin llamar al modelo**.
@@ -77,7 +79,7 @@ src/
   services/      solicitud.service.ts
   app.ts · index.ts
 tests/           utils/ · api/ · db/ · eval/ · llm/
-web/             React (Vite) — fase final
+web/             React + Vite + Tailwind v4 — build → web/dist (servido por Express)
 Dockerfile · docker-compose.yml · Makefile · .env.example · README.md
 DECISIONES.md · AI_LOG.md   ← los escribe el autor, NO el agente
 PLAN.md
@@ -88,8 +90,13 @@ PLAN.md
 **La fuente de la verdad son los scripts de `package.json`**; el `Makefile` solo delega en ellos.
 
 ```
-npm run dev                  # servidor en desarrollo
-npm run build                # prisma generate + tsc
+npm run dev                  # backend + frontend juntos (concurrently)
+npm run dev:server           # solo backend (tsx watch, :3000)
+npm run dev:web              # solo frontend (vite, :5173, proxy a la API)
+npm run build                # backend + frontend juntos (concurrently)
+npm run build:server         # prisma generate + tsc → dist/
+npm run build:web            # vite build → web/dist
+npm run web:install          # instala deps del frontend (web/)
 npm test                     # tests (Vitest, sin API real)
 npm run lint                 # lint
 npm run llm:ping -- MSG-01   # probar una config LLM (--id MSG-xx o texto libre)
@@ -101,7 +108,8 @@ docker compose up            # levantar todo (verificación diferida, ver PLAN.m
 ```
 
 Equivalentes cortos vía `make` (mismos scripts): `make test`, `make smoke`, `make results`,
-`make eval`, `make llm-ping ARGS="MSG-01"`, `make dev`, `make build`.
+`make eval`, `make llm-ping ARGS="MSG-01"`, `make dev`, `make dev-server`, `make dev-web`,
+`make web-install`, `make build`, `make build-server`, `make build-web`.
 
 ## 6. Convenciones
 
@@ -143,7 +151,7 @@ Equivalentes cortos vía `make` (mismos scripts): `make test`, `make smoke`, `ma
 | F4 — Batch + `resultados.json` | ✅ Completa | `run-batch`+`pool` (pLimit/allSettled), `mensajes.json`, `resultados.json` real (12/12), persistencia idempotente |
 | F5 — API HTTP | ✅ Completa | `POST/GET/GET{id}/PATCH /solicitudes` con auth `x-api-key`, idempotencia (200/409), filtros+paginación, `Correccion` en PATCH, logs pino; 87 tests |
 | F6 — Evaluación + calibración | ✅ Completa | Eval offline (no dudosos vs dudosos + barrido de umbral) + registry `PROMPT_VERSION` + `resultados.<version>.json`; **v2 aplicado** (requiere_info 58→92; no dudosos 97.9%) |
-| F7 — Frontend React (mínimo) | ⬜ No iniciada | |
+| F7 — Frontend React (mínimo) | ✅ Completa | `web/` (React 19 + Vite + Tailwind v4, skill `minimalist-ui`); Express sirve `web/dist` (same-origin); lista/detalle(diff+historial)/PATCH/alta; **topbar `#fd3333` y filtros fijos**, **dark mode por SO**, **`id` opcional**; `dev`/`build` con `concurrently` |
 | F8 — Docs y empaquetado | ⬜ No iniciada | |
 | F9 — Docker (verificación diferida) | ⬜ No iniciada | Requiere Docker instalado |
 | F10 — Extras opcionales | ⬜ No iniciada | |
@@ -152,6 +160,23 @@ Leyenda: ⬜ No iniciada · ⏳ En curso · ✅ Completa · ⛔ Bloqueada
 
 ## 9. Hechos / decisiones vivas (append)
 
+- **F7 (completa)**: `web/` = **React 19 + Vite + Tailwind v4** (paquete propio; `npm run web:install`),
+  estilo según la skill **`minimalist-ui`** (monocromo cálido, tipografía editorial, casi sin sombras,
+  pasteles para tags). Vistas: **lista** (filtros + paginación + badge `requiere_revision` + semáforo de
+  `confianza`), **detalle** (mensaje **enmascarado**, vigente con **diff** vs `clasificacion_original`,
+  **historial de `Correccion`** agrupado por `patch_id`), **corrección** (**PATCH** solo campos
+  cambiados + `autor`; valida `resumen` ≤20 palabras y coherencia `requiere_info↔pregunta_seguimiento`)
+  y **alta** (**POST** `id`+`mensaje`). **Express sirve `web/dist`** (same-origin, sin CORS) con
+  **fallback SPA** (`GET` no-API con `Accept: html`; el 404 JSON de la API sigue igual); env
+  `WEB_DIST` (default `web/dist`). `GET /solicitudes/{id}` ahora devuelve **`contenido_mascarado`**
+  (la lista no; `contenido_raw` nunca). API key **quemada** en el bundle (`VITE_API_KEY`; riesgo
+  documentado en README). `dev`/`build` con **`concurrently`** (`dev`/`dev:server`/`dev:web`,
+  `build`/`build:server`/`build:web`; Vite proxya la API en dev). `.agents/**` ignorado en ESLint
+  (scripts de las skills). Sin tests de frontend (no lo pide el case). **F7.1/F7.2**: `id` **opcional**
+  en el alta (la UI genera `MSG-<epoch-ms>` si viene vacío; la API sigue exigiéndolo); **dark mode**
+  por `@media (prefers-color-scheme: dark)` redefiniendo los tokens (sin toggle); **topbar fijo**
+  (`--color-brand` `#fd3333`) y **filtros fijos** (`sticky top-16`); la ruta de detalle de la UI es
+  **`/solicitud/:id`** (evita colisionar con la API `/solicitudes` al recargar).
 - **F6 (completa)**: `data/etiquetas_esperadas.json` (movido desde la raíz); las `justificacion`
   ahora empiezan con **`(campo1, campo2) - …`** declarando las **props dudosas** (label ambiguo).
   **Registry de prompts** `src/prompts/index.ts` (`resolverPrompt(PROMPT_VERSION)`), usado por

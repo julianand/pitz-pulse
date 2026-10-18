@@ -1,3 +1,5 @@
+import { existsSync } from 'node:fs';
+import { resolve } from 'node:path';
 import express, { type Express } from 'express';
 import type { ClassifyInput } from './agents/classifier/index.js';
 import { env } from './config/env.js';
@@ -48,6 +50,33 @@ export function createApp(deps: AppDeps = {}): Express {
       confidenceThreshold: deps.confidenceThreshold ?? env.CONFIDENCE_THRESHOLD,
     }),
   );
+
+  // Frontend compilado (`web/dist`): se sirve en el mismo origen (sin CORS). Si no
+  // existe el build, se omite y las rutas desconocidas siguen respondiendo JSON 404.
+  if (env.WEB_DIST) {
+    const webDist = resolve(process.cwd(), env.WEB_DIST);
+
+    if (existsSync(webDist)) {
+      app.use(express.static(webDist));
+
+      // Fallback SPA: cualquier GET que no sea de la API devuelve `index.html`.
+      app.use((req, res, next) => {
+        if (req.method !== 'GET' && req.method !== 'HEAD') {
+          next();
+          return;
+        }
+        if (req.path.startsWith('/solicitudes') || req.path.startsWith('/health')) {
+          next();
+          return;
+        }
+        if (!req.accepts('html')) {
+          next();
+          return;
+        }
+        res.sendFile(resolve(webDist, 'index.html'));
+      });
+    }
+  }
 
   app.use(notFoundHandler);
   app.use(errorHandler);

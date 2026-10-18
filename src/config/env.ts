@@ -19,6 +19,9 @@ const EnvSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   PORT: z.coerce.number().int().positive().default(3000),
 
+  // Build del frontend que sirve Express (relativo al cwd). Vacío = no servir estático.
+  WEB_DIST: z.string().default('web/dist'),
+
   API_KEY: z.string().min(1).default('dev-api-key'),
 
   DATABASE_URL: z.string().default('file:./dev.db'),
