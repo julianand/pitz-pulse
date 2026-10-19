@@ -28,8 +28,8 @@ RUN npm --prefix web ci
 FROM deps-web AS build-web
 # La API key del frontend se "hornea" en el bundle al compilar (el navegador no lee env en
 # runtime). Se recibe como build arg desde `docker-compose.yml`, que la toma de `.env`
-# (la misma que usa el backend en API_KEY).
-ARG VITE_API_KEY=change-me
+# (la misma que usa el backend en API_KEY). El default coincide con el del backend.
+ARG VITE_API_KEY=dev-api-key
 COPY web ./web
 RUN VITE_API_KEY="$VITE_API_KEY" npm --prefix web run build
 

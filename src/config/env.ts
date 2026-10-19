@@ -1,5 +1,18 @@
-import 'dotenv/config';
+import { existsSync } from 'node:fs';
+import { resolve } from 'node:path';
+import { config } from 'dotenv';
 import { z } from 'zod';
+
+/**
+ * ¿Hay `.env` en el cwd? De esto depende el modo por defecto: **sin `.env` la app arranca en
+ * mock** (`MOCK=1`), para que el proyecto corra sin claves ni configuración previa.
+ */
+const envPath = resolve(process.cwd(), '.env');
+const hayEnvFile = existsSync(envPath);
+
+if (hayEnvFile) {
+  config({ path: envPath, quiet: true });
+}
 
 /**
  * Convierte variables tipo "1"/"true"/"yes"/"on" a booleano.
@@ -47,7 +60,12 @@ const EnvSchema = z.object({
   PRICE_INPUT_PER_1M: z.coerce.number().min(0).default(0),
   PRICE_OUTPUT_PER_1M: z.coerce.number().min(0).default(0),
 
-  MOCK: booleanFromEnv(false),
+  /**
+   * Modo mock: desactiva las llamadas al modelo real. Default: **`1` si no existe `.env`**
+   * (correr el proyecto sin configuración), `0` si hay `.env` y no lo define. Un valor
+   * explícito (`MOCK=0`/`MOCK=1`) siempre gana.
+   */
+  MOCK: booleanFromEnv(!hayEnvFile),
 });
 
 export type Env = z.infer<typeof EnvSchema>;

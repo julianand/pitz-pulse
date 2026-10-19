@@ -16,8 +16,10 @@ const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? '';
 /**
  * API key quemada en el frontend (decisión del case). Se inyecta en build desde
  * `VITE_API_KEY`; si cambia `API_KEY` en el backend, cambiala acá (o en `web/.env`).
+ * El fallback es el **mismo default del backend** (`dev-api-key`), para que la UI funcione
+ * sin `web/.env` ni `.env`.
  */
-const API_KEY = import.meta.env.VITE_API_KEY ?? 'change-me';
+const API_KEY = import.meta.env.VITE_API_KEY ?? 'dev-api-key';
 
 interface Issue {
   path: string;

@@ -51,7 +51,8 @@ Fuentes de requisitos, en orden de precedencia:
   registra la usada. (Vive dentro de `src/` para respetar el `rootDir` del build.)
 - **Eval offline**: compara `resultados.json` vs `etiquetas_esperadas.json` **sin llamar al modelo**.
 - **Costos**: `usage` real por llamada; precios por modelo vía env (no hardcodeados).
-- **Mock**: `MOCK=1` documentado; usado por tests.
+- **Mock**: `MOCK=1` documentado; usado por tests. **Default `1` cuando no hay `.env`** (correr sin
+  configuración); con `.env` y sin `MOCK` → `0`.
 - **Duplicados** (mensajes similares): fuera de alcance salvo tiempo.
 
 Campos de la clasificación (salida del agente):
@@ -104,8 +105,11 @@ npm run smoke                # smoke test de la API contra un server levantado
 npm run results              # genera data/resultados.<version>.json + data/resultados.json (MOCK=1 offline)
 npm run eval                 # evalúa resultados vs etiquetas_esperadas (offline)
 npm run db:migrate           # migraciones Prisma (db:generate/db:deploy/db:reset)
-docker compose up            # levantar todo (verificación diferida, ver PLAN.md F9)
+docker compose up            # levantar todo (sin .env: MOCK=1 + key `dev-api-key`)
 ```
+
+> **Sin `.env`**: el proyecto corre igual → `MOCK=1` y `API_KEY`/`VITE_API_KEY` por defecto en
+> **`dev-api-key`** (el mismo en backend y UI). Ver §9.
 
 Equivalentes cortos vía `make` (mismos scripts): `make test`, `make smoke`, `make results`,
 `make eval`, `make llm-ping ARGS="MSG-01"`, `make dev`, `make dev-server`, `make dev-web`,
@@ -159,6 +163,23 @@ Equivalentes cortos vía `make` (mismos scripts): `make test`, `make smoke`, `ma
 Leyenda: ⬜ No iniciada · ⏳ En curso · ✅ Completa · ⛔ Bloqueada
 
 ## 9. Hechos / decisiones vivas (append)
+
+- **Sin `.env` (ajuste posterior a F9)**: el proyecto **corre sin `.env`**. `src/config/env.ts` ya no
+  usa `import 'dotenv/config'`: detecta `existsSync(resolve(process.cwd(), '.env'))` y carga el archivo
+  solo si existe (`config({ path, quiet: true })`). `MOCK` pasa a `booleanFromEnv(!hayEnvFile)` →
+  **`1` sin `.env`**, `0` si hay `.env` y no lo define (un `MOCK=0/1` explícito siempre gana).
+  Default único de API key **`dev-api-key`** en backend (`env.ts`), UI (`web/src/api/client.ts`,
+  fallback del `??`), `.env.example`, `web/.env.example` y `Dockerfile` (`ARG VITE_API_KEY`); antes el
+  backend usaba `dev-api-key` y el ejemplo/UI `change-me` → **401** si faltaba `web/.env`.
+  **Docker**: `env_file` con `required: false` y `MOCK: ${MOCK:-1}` → `docker compose up --build` sin
+  `.env` arranca en mock con `dev-api-key` (la sintaxis larga de `env_file` pide Compose ≥ 2.24).
+  **Verificado**: `npx tsx` desde un cwd sin `.env` → `MOCK=true`, `API_KEY=dev-api-key`,
+  `isMockMode=true`; con `.env` sin `MOCK` → `false` (y `MOCK=1` shell gana); bundle Vite compilado sin
+  `web/.env` contiene `dev-api-key`; E2E con `dist/` y cwd sin `.env` (BD temporal, `WEB_DIST` del
+  build sin `.env`): `/health` 200, UI 200, `POST` 201 mock, replay 200, key vieja `change-me` **401**;
+  `npm run lint` limpio, **105 tests** verdes, `npm run build` OK; `docker compose config` OK
+  (con `.env`: `MOCK=0`; sin `.env`: `MOCK=1` + `VITE_API_KEY=dev-api-key`).
+  Sin `.env`, `DATABASE_URL` cae al default `file:./dev.db` → correr `npm run db:deploy` si falta la BD.
 
 - **F9 (completa)**: Docker verificado con **Docker Desktop**. Base **`node:24-alpine` + `openssl`**
   (Prisma sobre musl); el runtime copia `prisma/`, corre `prisma generate` y arranca con

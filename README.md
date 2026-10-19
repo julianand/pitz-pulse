@@ -93,18 +93,32 @@ tipos); quedó documentado y cerrado.
 
 ## Cómo levantar (desarrollo)
 
+**Sin `.env` (mock, sin claves):** el proyecto corre tal cual. Si no existe `.env`, el backend usa
+`MOCK=1` y la API key por defecto **`dev-api-key`**, la misma que usa la UI, así que todo funciona.
+
+```bash
+npm install                     # deps del backend
+npm run web:install             # deps del frontend (una vez)
+npm run db:deploy               # crea/migra la BD (si `prisma/dev.db` no existe todavía)
+npm run dev                     # backend (3000) + frontend (5173) juntos
+curl http://localhost:3000/health
+```
+
+**Con `.env` (modelo real):** copiá los dos ejemplos y completá las claves.
+
 ```bash
 cp .env.example .env            # 1) variables del backend
-cp web/.env.example web/.env    # 2) variables del frontend  ← ¡no te lo saltees!
+cp web/.env.example web/.env    # 2) variables del frontend (opcional: solo para otra key)
 npm install                     # deps del backend
 npm run web:install             # deps del frontend (una vez)
 npm run dev                     # backend (3000) + frontend (5173) juntos
 curl http://localhost:3000/health
 ```
 
-> ⚠️ **Hay que copiar los dos `.env`.** El del frontend (`web/.env`) es el que le da la API key a la
-> UI: si falta, la UI usa `change-me`, no coincide con el backend y la API responde **401**.
-> Los dos ejemplos traen `change-me`, así que **coinciden sin tocar nada**.
+> ⚠️ **Si no copiás `web/.env`**, la UI usa el default `dev-api-key`, que es **el mismo** default del
+> backend: coinciden y no hay 401. Los dos `.example` traen `dev-api-key`, así que **coinciden sin
+> tocar nada**; el único motivo para crear `web/.env` es usar **otra** key (entonces también hay que
+> cambiarla en `.env`).
 
 `npm run dev` usa `concurrently` y levanta los dos procesos; también se pueden correr por separado:
 `npm run dev:server` (Express en `:3000`) y `npm run dev:web` (Vite en `:5173`, con **proxy** a la API).
@@ -113,15 +127,15 @@ curl http://localhost:3000/health
 
 | Variable | Archivo | Qué poner |
 |---|---|---|
-| `MOCK` | `.env` | **`1`** = no llama al modelo (no necesitás claves). `0` = real. |
-| `API_KEY` | `.env` | key que exige la API (default `change-me`) |
-| `VITE_API_KEY` | `web/.env` | **la misma** que `API_KEY` |
+| `MOCK` | `.env` | **`1`** = no llama al modelo (no necesitás claves). `0` = real. **Default: `1` si no hay `.env`**, `0` si hay `.env`. |
+| `API_KEY` | `.env` | key que exige la API (default `dev-api-key`, igual que la UI) |
+| `VITE_API_KEY` | `web/.env` | **la misma** que `API_KEY` (si falta el archivo, cae al mismo default) |
 | `LLM_PROVIDER_BASE_URL` | `.env` | URL del endpoint **OpenAI-compatible** (obligatorio; solo si `MOCK=0`) |
 | `LLM_API_KEY` | `.env` | clave del proveedor (solo si `MOCK=0`) |
 | `LLM_MODEL` | `.env` | modelo (default `deepseek-v4.1-flash`) |
 
-- **Rápido y gratis**: `MOCK=1` → probás API + UI + corrección sin claves ni costo.
-- **Con modelo real**: `MOCK=0` + `LLM_PROVIDER_BASE_URL`, `LLM_API_KEY` y `LLM_MODEL`.
+- **Rápido y gratis**: sin `.env` (o con `MOCK=1`) → probás API + UI + corrección sin claves ni costo.
+- **Con modelo real**: `.env` con `MOCK=0` + `LLM_PROVIDER_BASE_URL`, `LLM_API_KEY` y `LLM_MODEL`.
 - `npm test` y `npm run eval` **no necesitan claves** (corren offline).
 
 ### Variables del backend
@@ -131,7 +145,7 @@ curl http://localhost:3000/health
 | `NODE_ENV` | `development` | `development` / `test` / `production` |
 | `PORT` | `3000` | puerto del server |
 | `LOG_LEVEL` | `info` | nivel de logs (pino) |
-| `API_KEY` | `change-me` | key que exige la API (header `x-api-key`) |
+| `API_KEY` | `dev-api-key` | key que exige la API (header `x-api-key`) |
 | `WEB_DIST` | `web/dist` | build del frontend que sirve Express (vacío = no sirve estáticos) |
 | `DATABASE_URL` | `file:./dev.db` | SQLite (ruta relativa al schema de Prisma) |
 | `LLM_PROVIDER_BASE_URL` | — | endpoint **OpenAI-compatible** (obligatorio: se usa el SDK de OpenAI) |
@@ -146,13 +160,13 @@ curl http://localhost:3000/health
 | `CONFIDENCE_THRESHOLD` | `0.75` | debajo de esto → `requiere_revision` |
 | `CONCURRENCY_LIMIT` | `4` | concurrencia del batch |
 | `PRICE_INPUT_PER_1M` / `PRICE_OUTPUT_PER_1M` | `0.15` / `0.60` | precios (ejemplo) para estimar el costo |
-| `MOCK` | `0` | `1` = no llama a la API real del modelo |
+| `MOCK` | `0` con `.env` · `1` sin `.env` | `1` = no llama a la API real del modelo |
 
 ### Variables del frontend
 
 | Variable | Default | Para qué |
 |---|---|---|
-| `VITE_API_KEY` | `change-me` | key que manda la UI (debe coincidir con `API_KEY`); se hornea al compilar |
+| `VITE_API_KEY` | `dev-api-key` | key que manda la UI (debe coincidir con `API_KEY`); se hornea al compilar |
 | `VITE_API_BASE_URL` | *(vacío)* | base de la API; vacío = mismo origen (evita CORS) |
 | `VITE_PROXY_TARGET` | `http://localhost:3000` | a dónde proxya Vite en desarrollo |
 
@@ -164,14 +178,17 @@ Imagen única (`Dockerfile` multi-stage: compila backend con `tsc` y frontend co
 Express. La BD SQLite persiste en el volumen nombrado `pulse-data` (montado en `/app/data`).
 
 ```bash
-docker compose up --build          # http://localhost:3000  (aplica migraciones al arrancar)
-MOCK=1 docker compose up --build   # sin llamar a la API real del modelo
+docker compose up --build          # sin .env: arranca en MOCK con la key `dev-api-key`
+docker compose up --build          # con .env: usa API_KEY y MOCK=0 (modelo real)
+MOCK=1 docker compose up --build   # fuerza mock aunque tengas .env
 docker compose down                # conserva el volumen (los datos persisten)
 docker compose down -v             # borra también el volumen (arranque limpio)
 ```
 
 Verificado: migraciones aplicadas al primer arranque (`prisma migrate deploy`), `GET /health` 200, UI
-en `:3000`, y los datos sobreviven a un `down` + `up`. Las claves entran por `env_file: .env`.
+en `:3000`, y los datos sobreviven a un `down` + `up`. Las claves entran por `env_file`, que es
+**opcional** (`required: false`): si no existe `.env`, el contenedor usa los defaults (mock +
+`dev-api-key`) — la sintaxis larga de `env_file` requiere Docker Compose ≥ 2.24.
 
 ## API HTTP
 
@@ -364,10 +381,12 @@ build (`web/dist`) en **el mismo origen**, así que no hay CORS.
 La UI necesita `x-api-key`. Para este case se deja **quemada en el bundle** al compilar vía
 `VITE_API_KEY`: **cualquiera que abra la UI puede leerla** (es inevitable en una app de navegador).
 
-- **Local**: se toma de `web/.env` (ver `web/.env.example`); al cambiarla, recompilar.
+- **Local**: se toma de `web/.env` (ver `web/.env.example`); si el archivo no existe, la UI cae al
+  default `dev-api-key`, que es el mismo del backend. Al cambiarla, recompilar.
 - **Docker**: `docker-compose.yml` la pasa como *build arg* desde tu `.env`
-  (`build.args: VITE_API_KEY: ${API_KEY}`), así **la UI y el backend usan la misma key**. Si la
-  cambiás, hay que reconstruir la imagen: `docker compose up -d --build`.
+  (`build.args: VITE_API_KEY: ${API_KEY:-dev-api-key}`), así **la UI y el backend usan la misma key**
+  (y sin `.env` ambas usan `dev-api-key`). Si la cambiás, hay que reconstruir la imagen:
+  `docker compose up -d --build`.
 
 La alternativa más segura sería un proxy same-origin que inyecte la key del lado servidor.
 

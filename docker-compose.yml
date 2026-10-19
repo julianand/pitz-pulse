@@ -7,7 +7,7 @@ services:
       # La key del frontend se hornea en el bundle al construir: se toma del `.env`
       # (la misma que el backend usa en API_KEY). Si cambia, hay que reconstruir la imagen.
       args:
-        VITE_API_KEY: ${API_KEY:-change-me}
+        VITE_API_KEY: ${API_KEY:-dev-api-key}
     ports:
       - '3000:3000'
     # Variables del contenedor: pisan lo que venga de `.env` (env_file).
@@ -17,9 +17,12 @@ services:
       WEB_DIST: web/dist
       DATABASE_URL: file:/app/data/pulse.db
       # `MOCK=1 docker compose up` levanta sin llamar a la API real del modelo.
-      MOCK: ${MOCK:-0}
+      # Sin `.env` el default es `1`: la imagen arranca en mock con la key `dev-api-key`.
+      MOCK: ${MOCK:-1}
+    # Opcional: si no existe `.env`, el contenedor usa los defaults (mock + `dev-api-key`).
     env_file:
-      - .env
+      - path: .env
+        required: false
     volumes:
       - pulse-data:/app/data
     healthcheck:
